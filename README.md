@@ -1,0 +1,2 @@
+# master_thesis
+This project is a part of school research task. The main goal of project is to predict future race in cycling or running based on previous training data, that we get from exact athlete. For this purpose I developed a framework for this. Framework provides ETL process and find optimal loss function for athlete with heuristics algorithm. Based on optimal loss function, we provide analysis and prediction.
