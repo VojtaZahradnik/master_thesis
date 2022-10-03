@@ -2,3 +2,9 @@ fit_files
 pcl_files
 raw_files
 .idea
+/logs/
+/src/modules/__init__.py
+/src/modules/test.py
+/venv/
+src/__pycache__
+src/modules/__pycache__
