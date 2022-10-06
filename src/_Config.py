@@ -13,7 +13,7 @@ class _Config:
         :param config_name: Name of the config file
         """
         self.config_name = config_name
-        from classes import log
+        from modules import log
 
         try:
             with open(self.config_name) as f:
@@ -53,5 +53,5 @@ class _Config:
         """
         Method for save new config file
         """
-        with open(self.config_name, "w") as outfile:
+        with open(self.config_name, 'w') as outfile:
             yaml.dump(self.conf, outfile, default_flow_style=False)
