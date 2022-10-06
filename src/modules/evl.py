@@ -1,13 +1,13 @@
 import os
 from pathlib import Path
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import scipy.interpolate
 import seaborn as sns
 
-from src.modules import evl, predict, spec
-from src.modules import fit
+from src.modules import evl, fit, predict, spec
 
 """
 Model evaluation with basic metrics of statistics

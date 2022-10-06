@@ -6,6 +6,7 @@ class _Logger:
     """
     Class for implementation of logging class
     """
+
     def __init__(self, project_name: str):
         """
         Loading config variables
@@ -25,9 +26,9 @@ class _Logger:
         logger = logging.getLogger(self.project_name)
 
         logger.setLevel(logging.INFO)
-        file_handler = logging.FileHandler(os.path.join(dir, dir_name, name), mode='a')
+        file_handler = logging.FileHandler(os.path.join(dir, dir_name, name), mode="a")
         formatter = logging.Formatter(
-            '%(asctime)s [%(levelname)s] %(message)s', '%Y-%m-%d %H:%M:%S'
+            "%(asctime)s [%(levelname)s] %(message)s", "%Y-%m-%d %H:%M:%S"
         )
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)

@@ -11,7 +11,7 @@ os.chdir(os.path.dirname(abspath))
 p = Path(os.getcwd())
 os.chdir(p.parent.parent)
 
-log = _Logger(project_name='master_thesis')
+log = _Logger(project_name="master_thesis")
 log.create_log(name="master_thesis.log", dir=os.getcwd(), dir_name="logs")
 log = log.get_logger()
 

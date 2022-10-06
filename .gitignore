@@ -6,3 +6,4 @@ raw_files
 /venv/
 src/__pycache__
 src/modules/__pycache__
+/.isort.cfg

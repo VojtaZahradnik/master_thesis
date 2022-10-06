@@ -1,6 +1,7 @@
 import argparse
 
-from modules import log, conf
+from modules import conf, log
+
 
 def main():
     """
@@ -22,7 +23,7 @@ def main():
 
 
 if __name__ == "__main__":
-    log.info('dasdas')
+    log.info("dasdas")
     try:
         main()
     except KeyboardInterrupt:

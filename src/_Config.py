@@ -7,6 +7,7 @@ class _Config:
     """
     Configuration class, that handle config file in format yaml
     """
+
     def __init__(self, config_name: str):
         """
         Initialize function to load config file
@@ -53,5 +54,5 @@ class _Config:
         """
         Method for save new config file
         """
-        with open(self.config_name, 'w') as outfile:
+        with open(self.config_name, "w") as outfile:
             yaml.dump(self.conf, outfile, default_flow_style=False)
