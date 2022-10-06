@@ -3,11 +3,22 @@ import os
 
 
 class _Logger:
-    def __init__(self, project_name: str):
-        self.project_name = project_name
+    """
+    Class for implementation of logging class
+    """
+    def __init__(self):
+        """
+        Loading config variables
+        """
+        self.project_name = conf['Project']['name']
 
     def create_log(self, name: str, dir: str, dir_name: str):
-
+        """
+        Basic setup of logger
+        :param name: Name of the logger
+        :param dir: Path to directory, where we have logs
+        :param dir_name: Name of directory, where we have logs
+        """
         if not (dir_name in os.listdir(dir)):
             os.mkdir(os.path.join(dir, dir_name))
 
@@ -22,4 +33,8 @@ class _Logger:
         logger.addHandler(file_handler)
 
     def get_logger(self) -> logging.Logger:
+        """
+        Returning logger object
+        :return: Object of logging library
+        """
         return logging.getLogger(self.project_name)

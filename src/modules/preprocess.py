@@ -1,5 +1,4 @@
 import glob
-import logging
 import math
 import os
 import time

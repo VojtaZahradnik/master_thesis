@@ -1,9 +1,6 @@
 import argparse
-import os
-from pathlib import Path
 
-import modules
-from modules import log,conf
+from modules import log, conf
 
 def main():
     """
@@ -19,14 +16,14 @@ def main():
     )
     args = my_parser.parse_known_args()
 
-    eval(vars(args[0])["module"]).input_cli(conf=conf, log=log)
+    # eval(vars(args[0])["module"]).input_cli(conf=conf, log=log)
 
     my_parser.set_defaults()
 
 
 if __name__ == "__main__":
     log.info('dasdas')
-    # try:
-    #     main()
-    # except KeyboardInterrupt:
-    #     log.error("Keyboard Interrupt")
+    try:
+        main()
+    except KeyboardInterrupt:
+        log.error("Keyboard Interrupt")
