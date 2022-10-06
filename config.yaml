@@ -1,2 +1,11 @@
 Project:
   name: 'master_thesis'
+
+Athlete:
+  name: 'krusnoton'
+  activity_type: 'run'
+
+Paths:
+  raw: 'raw_files'
+  fit: 'fit_files'
+  pcl: 'pcl_files'

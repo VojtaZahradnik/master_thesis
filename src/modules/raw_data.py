@@ -5,91 +5,89 @@ import time
 
 import fitparse
 import pyunpack
+from pathlib import PurePath
 from tqdm import tqdm
-
+from modules import log, conf
 """
-Basic extract and sort of Fit files
+Basic extract and sort of fit files.
 """
 
 
-def input_cli(conf: dict, log: logging.Logger):
+def input_cli():
     """
-    Solution for CLI input without __init__
-    :param conf: Configuration dictionary
+    Solution for CLI input without __init__.
     """
-    unpack(path_to_load=conf["Paths"]["raw"], path_to_save=conf["Paths"]["fit"])
+    unpack(path_to_load=conf["Paths"]["raw"], path_to_save=conf["Paths"]["fit"], athlete_name=conf["Athlete"]["name"])
     log.info("Unpacked")
-    sort_activities(athlete=conf["Athlete"]["name"], path_to_save=conf["Paths"]["fit"])
+    sort_activities(athlete_name=conf["Athlete"]["name"], path_to_save=conf["Paths"]["fit"])
     log.info("Sorted")
 
 
-def unpack(path_to_load: str, path_to_save: str):
+def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
     """
-    Unpack fit files from compressed format
-    :param path_to_load: pickle file path
-    :param path_to_save: save path of sorted activities
+    Unpack fit files from compressed format.
+    :param path_to_load: Pickle file path.
+    :param path_to_save: Save path of sorted activities.
+    :param athlete_name: Name of the athlete.
     """
     start = time.monotonic()
-    files = glob.glob(f"{path_to_load}/*.gz")
+    files = glob.glob(os.path.join(path_to_load,athlete_name,'*.gz'))
+    if path_to_save not in os.listdir():
+        os.mkdir(path_to_save)
+    if athlete_name not in os.listdir(path_to_save):
+        os.mkdir(os.path.join(path_to_save,athlete_name))
     if len(files) != 0:
         for x in tqdm(range(len(files))):
-            _, ext = os.path.splitext(files[x])
-            pyunpack.Archive(os.path.join(path_to_load, files[x])).extractall(
-                path_to_save
+            pyunpack.Archive(files[x]).extractall(
+                os.path.join(path_to_save,athlete_name)
             )
-            os.remove(os.path.join(path_to_load, files[x]))
-        logging.getLogger("project").info(
-            f"{len(files)} files unpacked after {round(time.monotonic() - start, 2)}"
+
+        log.info(
+            f"{len(files)} files unpacked after {round(time.monotonic() - start, 2)} seconds"
         )
 
     else:
-        logging.getLogger("project").warning("Raw data folder for unpack is empty")
+        log.warning(f"Raw data {path_to_load} folder for unpack is empty")
 
 
-def sort_activities(athlete: str, path_to_save: str):
+def sort_activities(athlete_name: str, path_to_save: str):
     """
     Sort activities by type and will choose activities with needed variables
-    :param athlete: name of the athlete
+    :param athlete_name: Name of the athlete
     :param path_to_save: save path of sorted activities
     """
     start = time.monotonic()
-    if athlete not in os.listdir(path_to_save):
-        os.mkdir(os.path.join(path_to_save, athlete))
-    files = [x for x in os.listdir(path_to_save) if ".fit" in x]
+    files = glob.glob(os.path.join(path_to_save,athlete_name,'*.fit'))
     if len(files) != 0:
         for x in tqdm(range(len(files))):
-            if not (files[x].isnumeric()):
-                continue
-            name, ext = os.path.splitext(files[x])
-            fitfile = fitparse.FitFile(os.path.join(path_to_save, files[x]))
-
+            fitfile = fitparse.FitFile(files[x])
             for record in fitfile.get_messages("session"):
                 if (
                     record.get_value("sub_sport") != "indoor_cycling"
                     and record.get_value("sub_sport") != "treadmill"
                 ):
-                    if record.get_value("sport") not in os.listdir(
-                        path_to_save + athlete
-                    ):
+                    activity_type = record.get_value("sport")
+                    if activity_type not in os.listdir(os.path.join(path_to_save,athlete_name)):
                         os.mkdir(
                             os.path.join(
                                 path_to_save,
-                                athlete,
-                                record.get_value("sport"),
+                                athlete_name,
+                                activity_type,
                             )
                         )
+
                     shutil.copyfile(
-                        os.path.join(path_to_save, files[x]),
+                        files[x],
                         os.path.join(
                             path_to_save,
-                            athlete,
-                            record.get_value("sport"),
-                            files[x],
+                            athlete_name,
+                            activity_type,
+                            os.path.split(files[x])[-1],
                         ),
                     )
-            os.remove(os.path.join(path_to_save, name + ext))
-        logging.getLogger("project").info(
-            f"{len(files)} files sorted after {round(time.monotonic() - start, 2)}"
+            os.remove(files[x])
+        log.info(
+            f"{len(files)} files sorted after {round(time.monotonic() - start, 2)} seconds"
         )
     else:
-        logging.getLogger("project").warning("Datasets folder is empty.")
+        log.warning(f"{athlete_name} folder for fits is empty.")

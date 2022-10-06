@@ -7,3 +7,4 @@ raw_files
 src/__pycache__
 src/modules/__pycache__
 /.isort.cfg
+/strava_tokens.json
