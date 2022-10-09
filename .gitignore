@@ -8,3 +8,5 @@ src/__pycache__
 src/modules/__pycache__
 /.isort.cfg
 /strava_tokens.json
+/src/research/.ipynb_checkpoints/
+/src/heuristics/__pycache__/

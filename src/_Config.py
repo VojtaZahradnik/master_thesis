@@ -14,7 +14,7 @@ class _Config:
         :param config_name: Name of the config file
         """
         self.config_name = config_name
-        from modules import log
+        from src.modules import log
 
         try:
             with open(self.config_name) as f:

@@ -14,5 +14,5 @@ stravalib~=0.10.4
 strava.backup~=0.2.1
 tqdm==4.64.1
 patool==1.12
-
+seaborn==0.12.0
 

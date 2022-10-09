@@ -1,6 +1,7 @@
 import argparse
 
-from modules import conf, log, raw_data
+from src.modules import conf, fit, log, preprocess, raw_data
+
 
 def main():
     """
@@ -14,11 +15,9 @@ def main():
         help="Module name you want to call",
         default=None,
     )
-    args = my_parser.parse_known_args()
-
+    args = my_parser.parse_args()
+    dict_param = vars(args)
     # eval(vars(args[0])["module"]).input_cli(conf=conf, log=log)
-
-    raw_data.input_cli()
 
     my_parser.set_defaults()
 

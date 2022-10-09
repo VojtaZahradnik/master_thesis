@@ -7,14 +7,14 @@ import pandas as pd
 import scipy.interpolate
 import seaborn as sns
 
-from src.modules import evl, fit, predict, spec
+from src.modules import evl, fit, predict, spec, conf, log
 
 """
 Model evaluation with basic metrics of statistics
 """
 
 
-def input_cli(conf: dict, log: logging.Logger):
+def input_cli():
     """
     Solution for CLI input without __init__
     :param conf: Configuration dictionary

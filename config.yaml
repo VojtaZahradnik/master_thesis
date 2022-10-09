@@ -1,11 +1,13 @@
 Project:
   name: 'master_thesis'
+  test_activity: '2021-09-18-06-13'
 
 Athlete:
-  name: 'krusnoton'
-  activity_type: 'run'
+  name: 'zahradnik'
+  activity_type: 'running'
 
 Paths:
   raw: 'raw_files'
   fit: 'fit_files'
   pcl: 'pcl_files'
+  output: 'output'

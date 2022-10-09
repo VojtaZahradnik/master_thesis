@@ -1,17 +1,13 @@
 import pandas as pd
 import statsmodels.regression.linear_model
 
-import src.modules.evl as evl
-import src.modules.fit as fit
-import src.modules.predict as pred
-import src.modules.spec as spec
-
+from src.modules import conf, log
 """
 Compute prediction for testing dataframe
 """
 
 
-def input_cli(conf: dict, log: logging.Logger):
+def input_cli():
     """
     Solution for CLI input without __init__
     :param conf: Configuration dictionary
