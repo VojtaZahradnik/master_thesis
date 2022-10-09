@@ -105,3 +105,9 @@ def get_race_index(df: pd.DataFrame, date: str) -> int:
             pos = x
             break
     return pos
+
+def get_train_df(data: list, ratio=0.8) -> pd.DataFrame:
+    return clean_data(pd.concat(data[0:round(ratio*len(data))]))
+
+def get_test_df(data: list, ratio=0.8) -> pd.DataFrame:
+    return clean_data(pd.concat(data[round(ratio*len(data)):]))

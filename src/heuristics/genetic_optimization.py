@@ -11,6 +11,8 @@ from src.modules.evl import calc_rmse
 from src.modules.predict import predict
 from src.modules.spec import ols_form
 
+from src.modules import log, conf
+
 """
 Module for GO
 """

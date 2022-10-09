@@ -10,7 +10,7 @@ Model specification
 
 
 def ols(
-    df: pd.DataFrame, col: list, endog="enhanced_speed"
+    df: pd.DataFrame, col: list, endog: str
 ) -> statsmodels.regression.linear_model.RegressionResultsWrapper:
     """
     Create model based on ordinary least squares method without formula
@@ -37,7 +37,7 @@ def ols_form(
 
 
 def sklearn(
-    df: pd.DataFrame, col: list, endog="enhanced_speed"
+    df: pd.DataFrame, col: list,  endog: str
 ) -> linear_model.LinearRegression:
     """
     Create model based on ordinary least squares method from library scikit-learn
@@ -55,7 +55,7 @@ def sklearn(
 
 
 def lasso(
-    df: pd.DataFrame, col: list, alpha=0.1, endog="enhanced_speed"
+    df: pd.DataFrame, col: list, endog: str, alpha=0.1,
 ) -> linear_model.Lasso:
     """
     Create model based on lasso regression from library scikit-learn
