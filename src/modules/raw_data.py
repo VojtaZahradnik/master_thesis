@@ -5,7 +5,7 @@ import time
 
 import fitparse
 import pyunpack
-from modules import conf, log
+from src.modules import conf, log
 from tqdm import tqdm
 
 """
@@ -35,7 +35,9 @@ def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
     :param athlete_name: Name of the athlete.
     """
     start = time.monotonic()
-    files = glob.glob(os.path.join(path_to_load, athlete_name, "*.gz"))
+    files = glob.glob(os.path.join(path_to_load, athlete_name, "*.zip"))
+    if(files == []):
+        files = glob.glob(os.path.join(path_to_load, athlete_name, "*.gz"))
     if path_to_save not in os.listdir():
         os.mkdir(path_to_save)
     if athlete_name not in os.listdir(path_to_save):
@@ -52,6 +54,7 @@ def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
 
     else:
         log.warning(f"Raw data {path_to_load} folder for unpack is empty")
+
 
 
 def sort_activities(athlete_name: str, path_to_save: str):

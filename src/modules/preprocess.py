@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate
 from meteostat import Daily, Point
-from modules import conf, df_columns, log
+from src.modules import conf, df_columns, log
 from pandas import DataFrame
 from tqdm import tqdm
 

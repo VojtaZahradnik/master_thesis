@@ -18,42 +18,22 @@ Module for GO
 """
 
 
-def selection(pop, scores, k=3):
+def tournament_selection(pop: list, scores: list):
     selection_ix = randint(len(pop))
 
-    for ix in randint(0, len(pop), k - 1):
+    for ix in randint(0, len(pop), randint(1,3)):
         if scores[ix] < scores[selection_ix]:
             selection_ix = ix
-        # break_?
     return pop[selection_ix]
 
-
-def select_parent(pop, scores):
-    """
-    Selection procedure that returns selected parent
-    :param pop: population
-    :param scores: metrics that determines quality of generation
-    :return: selected parents
-    """
-    parent = []
-    total = sum(scores)
-    norm_fitness_values = [x / total for x in scores]
-    cumulative_fitness = []
-
-    start = 0
-    for norm_value in norm_fitness_values:
-        start += norm_value
-        cumulative_fitness.append(start)
-
-    individual_number = 0
-    for score in cumulative_fitness:
-        if uniform(0, 1) <= score:
-            parent = pop[individual_number]
-            break
-        individual_number += 1
-
-    return parent
-
+def proportionate_selection(pop: list, scores: list):
+    max_score = sum(scores)
+    pick = random.uniform(0, max_score)
+    current = 0
+    for x in range(len(scores)):
+        current += scores[x]
+        if current > pick:
+            return pop[x]
 
 def generic_func(
     cols: list,
@@ -74,23 +54,22 @@ def generic_func(
     return calc_rmse(test_df[endog], pred_ols)
 
 
-def mutation(bitstring: list, r_mut: int, full_form: list):
+def mutation(cols: list, r_mut: int, full_form: list):
     """
     This procedure simply flips bits with a low probability controlled by the “r_mut”
     :param bitstring: list of columns for formula
     :param r_mut: hyperparameter determines the amount of mutation
     :param full_form: maximal possible formula in list
     """
-    # upravit
-    for i in range(len(bitstring)):
-        if np.random.rand() < r_mut:
-            new_bitstring = full_form[randint(0, len(full_form))]
-            if new_bitstring not in bitstring:
-                bitstring.append(new_bitstring)
+    for i in range(len(full_form)):
+        n= np.random.rand()
+        if n < r_mut:
+            # new_bitstring = full_form[randint(0, len(full_form))]
+            if full_form[i] not in cols:
+                cols.append(full_form[i])
             else:
-                bitstring.pop(i)
-            break
-    return bitstring
+                cols.pop(cols.index(full_form[i]))
+    return cols
 
 
 def crossover(p1: list, p2: list, r_cross: int) -> list:
@@ -117,7 +96,7 @@ def genetic_algorithm(
     pop: list,
     train_df: pd.DataFrame,
     test_df: pd.DataFrame,
-    col: list,
+    full_col: list,
     endog: str,
 ) -> List[Any]:
     """
@@ -128,7 +107,7 @@ def genetic_algorithm(
     :param pop: population for GO
     :param train_df: train dataframe
     :param test_df: test dataframe
-    :param col: List of endogenous variables
+    :param full_col: List of exogenous variables
     :param endog: Endogenous variable
     """
 
@@ -147,8 +126,8 @@ def genetic_algorithm(
 
         children = []
         for i in range(0, len(pop), 2):
-            p1, p2 = selection(pop, scores), selection(pop, scores)
+            p1, p2 = proportionate_selection(pop, scores), proportionate_selection(pop, scores)
             for c in crossover(p1, p2, r_cross):
-                children.append(mutation(c, r_mut, col))
+                children.append(mutation(c, r_mut, full_col))
         pop = children
     return [best, best_eval]
