@@ -7,7 +7,7 @@ from garminconnect import (
     GarminConnectAuthenticationError,
 )
 from src.modules import conf, fit, raw_data, preprocess, df_columns
-
+from tqdm import tqdm
 
 class _GarminAPI:
     """
@@ -19,6 +19,8 @@ class _GarminAPI:
         Initial function to determine basic variables
         """
         self.athlete_name = athlete_name
+        if(self.athlete_name not in os.listdir(conf['Paths']['raw'])):
+            os.mkdir(os.path.join(conf['Paths']['raw'],self.athlete_name))
         self.end_date = None
         self.start_date = None
         self.api = Garmin(conf['Garmin']['email'], conf['Garmin']['pass'])
@@ -37,11 +39,11 @@ class _GarminAPI:
         """
         Function to download fit files from Garmin, going through all activities in date range
         """
-        activities = api.get_activities_by_date(startdate, enddate)
-        for activity in activities:
+        activities = self.api.get_activities_by_date(self.start_date, self.end_date)
+        for activity in tqdm(activities):
             activity_id = activity["activityId"]
-            zip_data = api.download_activity(activity_id,
-                                             dl_fmt=api.ActivityDownloadFormat.ORIGINAL)
+            zip_data = self.api.download_activity(activity_id,
+                                             dl_fmt=self.api.ActivityDownloadFormat.ORIGINAL)
             output_file = os.path.join(conf['Paths']['raw'], self.athlete_name, f'{str(activity_id)}.zip')
             with open(output_file, "wb") as fb:
                 fb.write(zip_data)

@@ -65,6 +65,8 @@ def sort_activities(athlete_name: str, path_to_save: str):
     """
     start = time.monotonic()
     files = glob.glob(os.path.join(path_to_save, athlete_name, "*.fit"))
+    start = time.monotonic()
+
     if len(files) != 0:
         for x in tqdm(range(len(files))):
             fitfile = fitparse.FitFile(files[x])
@@ -84,7 +86,6 @@ def sort_activities(athlete_name: str, path_to_save: str):
                                 activity_type,
                             )
                         )
-
                     shutil.copyfile(
                         files[x],
                         os.path.join(

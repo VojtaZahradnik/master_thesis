@@ -42,13 +42,6 @@ def input_cli(endo_var: str):
     #
 
 
-def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    df.replace([np.inf, -np.inf], np.nan, inplace=True)
-    df.dropna(inplace=True, axis=1)
-    df.drop_duplicates(inplace=True)
-    return df
-
-
 def load_pcls(athlete_name: str, activity_type: str, path_to_load: str) -> list:
     """
     Load pickles files from load path
@@ -106,8 +99,24 @@ def get_race_index(df: pd.DataFrame, date: str) -> int:
             break
     return pos
 
-def get_train_df(data: list, ratio=0.8) -> pd.DataFrame:
-    return clean_data(pd.concat(data[0:round(ratio*len(data))]))
+def get_train_test_df(data: list, ratio= 0.8) -> (pd.DataFrame, pd.DataFrame):
+    concated_data = pd.concat(data)
+    train_df = concated_data[0:round(len(concated_data) * ratio)]
+    train_df = train_df + concated_data[0:len(train_df) + get_diff(concated_data,train_df)]
+    test_df = concated_data[len(train_df):]
 
-def get_test_df(data: list, ratio=0.8) -> pd.DataFrame:
-    return clean_data(pd.concat(data[round(ratio*len(data)):]))
+    return clean_data(train_df), clean_data(test_df)
+
+def get_diff(concated_data: pd.DataFrame, train_df: pd.DataFrame) -> int:
+    break_day = concated_data[len(train_df):].index[0].date()
+
+    counter = 0
+    for x in concated_data[len(train_df):].index:
+        if (x.date() == break_day):
+            counter += 1
+        else:
+            break
+    return counter
+
+def clean_data(df: pd.DataFrame) -> pd.DataFrame:
+    return df.replace([np.inf, -np.inf], np.nan).dropna().drop_duplicates()
