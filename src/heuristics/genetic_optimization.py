@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from src.heuristics.random_shooting import get_form
 from src.modules.evl import calc_rmse
-from src.modules.predict import predict
+from src.modules.pred import predict
 from src.modules.spec import ols_form
 
 from src.modules import log, conf
@@ -61,16 +61,14 @@ def mutation(cols: list, r_mut: int, full_form: list):
     :param r_mut: hyperparameter determines the amount of mutation
     :param full_form: maximal possible formula in list
     """
+    new_cols = cols.copy()
     for i in range(len(full_form)):
-        n= np.random.rand()
-        if n < r_mut:
-            # new_bitstring = full_form[randint(0, len(full_form))]
+        if np.random.rand() < r_mut:
             if full_form[i] not in cols:
-                cols.append(full_form[i])
+                new_cols.append(full_form[i])
             else:
-                cols.pop(cols.index(full_form[i]))
-    return cols
-
+                new_cols.pop(new_cols.index(full_form[i]))
+    return new_cols
 
 def crossover(p1: list, p2: list, r_cross: int) -> list:
     """
@@ -81,8 +79,7 @@ def crossover(p1: list, p2: list, r_cross: int) -> list:
     :return: list of childrens
     """
     c1, c2 = p1.copy(), p2.copy()
-    r_cross = int(r_cross * 100)
-    if random.randint(0, 100) < r_cross:
+    if np.random.rand() < r_cross:
         pt = np.random.randint(1, len(p1))
         c1 = p1[:pt] + p2[pt:]
         c2 = p2[:pt] + p1[pt:]

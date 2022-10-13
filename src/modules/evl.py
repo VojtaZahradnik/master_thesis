@@ -7,7 +7,7 @@ import pandas as pd
 import scipy.interpolate
 import seaborn as sns
 
-from src.modules import evl, fit, predict, spec, conf, log
+from src.modules import evl, fit, pred, spec, conf, log
 
 """
 Model evaluation with basic metrics of statistics
@@ -253,7 +253,7 @@ def plot(df: pd.DataFrame, pred: list, endog="enhanced_speed", spline=False, lwi
 
     sns.set(style="ticks")
     ax1.legend(loc="upper left")
-    ax2.legend(loc="best")
+    ax2.legend(loc="upper right")
 
     return fig
 

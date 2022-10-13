@@ -1,6 +1,7 @@
 import glob
 import os
 import shutil
+import threading
 import time
 
 import fitparse
@@ -55,7 +56,9 @@ def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
     else:
         log.warning(f"Raw data {path_to_load} folder for unpack is empty")
 
-
+def divide_chunks(l, n):
+    for i in range(0, len(l), n):
+        yield l[i:i + n]
 
 def sort_activities(athlete_name: str, path_to_save: str):
     """
@@ -63,11 +66,9 @@ def sort_activities(athlete_name: str, path_to_save: str):
     :param athlete_name: Name of the athlete
     :param path_to_save: save path of sorted zahradnik
     """
-    start = time.monotonic()
-    files = glob.glob(os.path.join(path_to_save, athlete_name, "*.fit"))
-    start = time.monotonic()
-
-    if len(files) != 0:
+    files = glob.glob(os.path.join(conf['Paths']['fit'], athlete_name, "*.fit"))
+    if(len(files)!=0):
+        start = time.monotonic()
         for x in tqdm(range(len(files))):
             fitfile = fitparse.FitFile(files[x])
             for record in fitfile.get_messages("session"):

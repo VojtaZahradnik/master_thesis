@@ -188,6 +188,7 @@ def calc_dist_diff(distance: pd.Series) -> list:
 
 
 def preprocessing(
+    days: list,
     activity_type: str,
     athlete_name: str,
     df_columns: list,
@@ -215,8 +216,8 @@ def preprocessing(
 
     dfs = []
     form = []
-    days = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
-    for x in tqdm(range(len(days))):
+    # days = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
+    for x in range(len(days)):
         try:
             df, record = parse_fit(days[x], df_columns)
             df.dropna(inplace=True)
@@ -271,7 +272,7 @@ def preprocessing(
     log.info(
         f"{len(days)} files was preprocessed after {round(time.monotonic() - start,2)}"
     )
-
+    print(len(dfs))
     return dfs
 
 
@@ -407,7 +408,7 @@ def load_race(
     test_df.drop_duplicates(inplace=True)
     from src.heuristics.random_shooting import get_form
     from src.modules.fit import clean_data
-    from src.modules.predict import predict
+    from src.modules.pred import predict
     from src.modules.spec import ols_form
 
     train_df, test_df = clean_data(train_df), clean_data(test_df)

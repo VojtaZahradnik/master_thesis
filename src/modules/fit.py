@@ -107,11 +107,20 @@ def get_train_test_df(data: list, ratio= 0.8) -> (pd.DataFrame, pd.DataFrame):
 
     return clean_data(train_df), clean_data(test_df)
 
-def get_diff(concated_data: pd.DataFrame, train_df: pd.DataFrame) -> int:
-    break_day = concated_data[len(train_df):].index[0].date()
+def get_test_valid_df(test_df: pd.DataFrame):
+    last_act_day = test_df.index[-1].date()
+    for x in range(len(test_df.index)):
+        if(test_df.index[x].date() == last_act_day):
+            sep = x
+            break
+
+    return test_df[:sep], test_df[sep:]
+
+def get_diff(concated_data: pd.DataFrame, df: pd.DataFrame) -> int:
+    break_day = concated_data[len(df):].index[0].date()
 
     counter = 0
-    for x in concated_data[len(train_df):].index:
+    for x in concated_data[len(df):].index:
         if (x.date() == break_day):
             counter += 1
         else:
