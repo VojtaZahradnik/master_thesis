@@ -13,6 +13,7 @@ from src.modules import evl, fit, pred, spec, conf, log
 Model evaluation with basic metrics of statistics
 """
 
+EPSILON = 1e-10
 
 def input_cli():
     """
@@ -50,175 +51,132 @@ def input_cli():
     log.info("Img saved into output")
     log.info(f"RMSE: {calc_rmse(test_df.enhanced_speed, ypred)}")
 
-
-def press_statistic(
-    y_true: pd.DataFrame,
-    y_pred: pd.Series,
-    xs: pd.DataFrame,
-) -> int:
+def error(actual: pd.Series, predicted: pd.Series) -> pd.Series:
     """
-    Predicted residual error sum of squares
-    :param y_true: true values of activity
-    :param y_pred: predicted values of activity
-    :param xs: whole testing dataframe
-    :return: sum of the squares of all the resulting prediction errors
+    Calculation of simple rror
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: Error/residuum
     """
-    den = 1 - np.diagonal(xs.dot(np.linalg.pinv(xs)))
-    sqr = np.square(y_pred - y_true / den)
+    return actual - predicted
 
-    return sqr.sum()
-
-
-def calc_predicted_r2(
-    df: pd.DataFrame,
-    pred: list,
-    endog="enhanced_speed",
-) -> int:
+def percentage_error(actual: pd.Series, predicted: pd.Series) -> pd.Series:
     """
-    Calculation of predicted R squared
-    :param df: tested dataframe
-    :param pred: predicted dataframe
-    :param endog: endogenous variable
-    :return: R squared value
+    Method to return series of percentage errors
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: Percentage of errors
     """
-    press = press_statistic(y_true=df[endog], y_pred=pred, xs=df)
+    return error(actual, predicted) / (actual + EPSILON)
 
-    sst = np.square(df[endog] - df[endog].mean()).sum()
-
-    return 1 - press / sst
-
-
-def calc_r2(
-    true_data: list,
-    pred: list,
-) -> int:
+def mse(actual: pd.Series, predicted: np.ndarray) -> int:
     """
-    Calculation of normal adjusted R squared
-    :param true_data: tested dataframe
-    :param pred: predicted dataframe
-    :return: adjusted R squared
+    Mean square error metric
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: MSE number
     """
-    sse = np.square(
-        [(element1 - element2) for (element1, element2) in zip(true_data, pred)]
-    ).sum()
-    sst = np.square(true_data - np.mean(pred)).sum()
+    return np.mean(np.square(error(actual, predicted)))
 
-    return 1 - sse / sst
-
-
-def calc_rmse(
-    true_data: pd.Series,
-    pred: pd.Series,
-) -> int:
+def rmse(actual: pd.Series, predicted: np.ndarray) -> int:
     """
-    Calculation of root mean squared error
-    :param true_data: tested list
-    :param pred: predicted list
-    :return: differences between values predicted by a model (RMSE)
+    Root mean square error metric
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: RMSE number
     """
-    n = len(true_data)
-    return np.sqrt(
-        1
-        / n
-        * np.sum(
-            [
-                (element1 - element2) ** 2
-                for (element1, element2) in zip(pred, true_data)
-            ]
-        )
-    )
+    return np.sqrt(mse(actual, predicted))
 
 
-def calc_std_dev(
-    true_data: list,
-    pred: list,
-) -> int:
+def nrmse(actual: pd.Series, predicted: np.ndarray) -> int:
     """
-    Calculation of standard deviation
-    :param true_data: tested list
-    :param pred: predicted list
-    :return:  measure of the amount of variation (standard deviation)
+    Normalized root mean square error metric
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: N number
     """
-    return (np.std(true_data) - np.std(pred)) ** 2
+    return rmse(actual, predicted) / (actual.max() - actual.min())
 
 
-def calc_mse(
-    true_data: list,
-    pred: list,
-) -> int:
+def me(actual: pd.Series, predicted: np.ndarray) -> int:
     """
-    Calculation of mean squared error
-    :param true_data: tested list
-    :param pred: predicted list
-    :return: average of the squares of the errors (MSE)
+    Mean error
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: ME number
     """
-    return (
-        1
-        / len(true_data)
-        * np.sum(
-            [
-                (element1 - element2) ** 2
-                for (element1, element2) in zip(pred, true_data)
-            ]
-        )
-    )
+    return np.mean(error(actual, predicted))
 
 
-def calc_mae(
-    true_data: list,
-    pred: list,
-) -> int:
+def mae(actual: pd.Series, predicted: np.ndarray) -> int:
     """
-    Calculation of mean absolute error
-    :param true_data: tested list
-    :param pred: predicted list
-    :return: errors between paired observations
+    Mean absolute error
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: MAE number
     """
-    return (
-        1
-        / len(true_data)
-        * np.sum(
-            np.abs(
-                [(element1 - element2) for (element1, element2) in zip(pred, true_data)]
-            )
-        )
-    )
+    return np.mean(np.abs(error(actual, predicted)))
 
-
-def calc_residual(
-    true_data: list,
-    pred: list,
-) -> int:
+def mdae(actual: pd.Series, predicted: np.ndarray) -> int:
     """
-    Calculation of basic residual metric
-    :param true_data: tested list
-    :param pred: predicted list
-    :return: sum of residual divided by number of observations
+    Median absolute error
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: MDAE number
     """
-    return np.sum(
-        np.abs([(element1 - element2) for (element1, element2) in zip(true_data, pred)])
-    ) / len(true_data)
+    return np.median(np.abs(error(actual, predicted)))
 
 
-def whole_eval(
-    true_data: list,
-    pred: list,
-):
+def mpe(actual: pd.Series, predicted: np.ndarray) -> int:
     """
-    Print some basic evaluations of model
-    :param true_data: tested dataframe
-    :param pred: predicted dataframe
+    Mean percentage error
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: MPE number
     """
-    print(f"RMSE: {calc_rmse(true_data, pred)}")
-    print(f"R2: {calc_r2(true_data, pred)}")
-    # print(f'Predicted R2: {calc_predicted_r2(true_data, pred)}')
-    print(f"Std. dev.: {calc_std_dev(true_data, pred)}")
-    print(f"MSE: {calc_mse(true_data, pred)}")
-    print(f"MAE: {calc_mae(true_data, pred)}")
-    print(f"Residual metric: {calc_residual(true_data, pred)}")
+    return np.mean(percentage_error(actual, predicted))
 
 
-def plot(df: pd.DataFrame, pred: list, endog="enhanced_speed", spline=False, lwidth=1):
+def mape(actual: pd.Series, predicted: np.ndarray) -> int:
+    """
+    Mean absolute percentage error
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: MAPE number
+    """
+    return np.mean(np.abs(percentage_error(actual, predicted)))
+
+def rrse(actual: pd.Series, predicted: np.ndarray) -> int:
+    """
+    Root relative squared error
+    :param actual: True values
+    :param predicted: Predicted values
+    :return: RRSE
+    """
+    return np.sqrt(np.sum(np.square(actual - predicted)) /
+                   np.sum(np.square(actual - np.mean(actual))))
+
+def evaluate(actual: pd.Series, predicted: pd.Series,
+             metrics=('rmse','nrmse','mape')):
+    results = {}
+    for name in metrics:
+        try:
+            results[name] = METRICS[name](actual, predicted)
+        except Exception as err:
+            results[name] = np.nan
+            log.error(f'Unable to compute metric {name}: {err}')
+    return results
+
+METRICS = {
+    'RMSE': rmse,
+    'NRMSE': nrmse,
+    'MAPE': mape,
+}
+
+def eval_all(actual: pd.Series, predicted: pd.Series):
+    return evaluate(actual, predicted, metrics=set(METRICS.keys()))
+
+def plot(df: pd.DataFrame, pred: list, true_data: int, endog="enhanced_speed", spline=False, lwidth=1):
     """
     Plot graph with difference between true values and predicted values.
     :param df: tested dataframe
@@ -236,7 +194,7 @@ def plot(df: pd.DataFrame, pred: list, endog="enhanced_speed", spline=False, lwi
     spl = scipy.interpolate.UnivariateSpline(x, df.enhanced_altitude[1:])
     altitude = spl(x)
 
-    ax1.plot(x, df[endog][1:], "b", label="True data")
+    ax1.plot(x, true_data[1:], "b", label="True data")
     ax1.tick_params(axis="y", labelcolor=color)
 
     if spline:

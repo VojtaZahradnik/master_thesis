@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 
-from src.modules.evl import calc_rmse
+from src.modules.evl import rmse, nrmse
 from src.modules.pred import predict
 from src.modules.spec import ols_form
 from src.modules import conf, log
@@ -20,7 +20,7 @@ def get_form(cols: list, endog: str):
     return f'{endog} ~ {" + ".join([x for x in cols if x != endog])} -1'
 
 
-def generate_cols(cols: list) -> list:
+def generate_cols(cols: list, ban_cols=[]) -> list:
     """
     Create list of all possible values in formula
     :param col: list of columns name
@@ -28,9 +28,12 @@ def generate_cols(cols: list) -> list:
     """
     n = random.randint(4, len(cols))
     new_cols = []
+    can_append =[]
     for x in range(n):
         tmp = cols[random.randint(0, len(cols) - 1)]
-        if tmp not in new_cols:
+        if ban_cols !=[]:
+            can_append = [True if x not in tmp else False for x in ban_cols]
+        if tmp not in new_cols and False not in can_append:
             new_cols.append(tmp)
     return new_cols
 
@@ -40,6 +43,7 @@ def random_shoot(
     test_df: pd.DataFrame,
     hmax: int,
     endog: str,
+    ban_cols=[]
 ) -> Tuple[Any, Any, Any, Any, Any]:
     """
     Implementation of random shooting heuristics algorithm
@@ -50,18 +54,20 @@ def random_shoot(
     :param barrier: RMSE number that we want
     :return: minimal RMSE, the best formula, RMSE list, columns list
     """
-    rmse = []
+    rmse_lst = []
     new_cols = []
+    nrmse_lst = []
     for _ in tqdm(range(hmax)):
-        columns = generate_cols(train_df.columns)
+        columns = generate_cols(train_df.columns, ban_cols)
         form = get_form(columns, endog)
         result = ols_form(train_df, form)                   # 2s
         pred_ols = predict(test_df, result)                 # + 0.5 s
-        rmse.append(calc_rmse(test_df[endog], pred_ols))
+        rmse_lst.append(rmse(test_df[endog], pred_ols))
+        nrmse_lst.append(nrmse(test_df[endog],pred_ols))
         new_cols.append(columns)
 
 
-    return np.min(rmse), new_cols[rmse.index(np.min(rmse))], rmse, new_cols
+    return np.min(rmse_lst), new_cols[rmse_lst.index(np.min(rmse_lst))], rmse_lst,new_cols,nrmse_lst
 
 
 def shoot_and_go(
@@ -89,7 +95,7 @@ def shoot_and_go(
             new_form = get_form(cols, endog)
             result = ols_form(train_df, new_form)
             pred_ols = predict(test_df, result)
-            new_rmse = calc_rmse(test_df[endog], pred_ols)
+            new_rmse = elv.rmse(test_df[endog], pred_ols)
             if new_rmse < rmse:
                 rmse = new_rmse
                 break

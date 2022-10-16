@@ -188,7 +188,6 @@ def calc_dist_diff(distance: pd.Series) -> list:
 
 
 def preprocessing(
-    days: list,
     activity_type: str,
     athlete_name: str,
     df_columns: list,
@@ -216,8 +215,8 @@ def preprocessing(
 
     dfs = []
     form = []
-    # days = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
-    for x in range(len(days)):
+    days = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
+    for x in tqdm(range(len(days))):
         try:
             df, record = parse_fit(days[x], df_columns)
             df.dropna(inplace=True)
@@ -272,7 +271,6 @@ def preprocessing(
     log.info(
         f"{len(days)} files was preprocessed after {round(time.monotonic() - start,2)}"
     )
-    print(len(dfs))
     return dfs
 
 
@@ -450,7 +448,7 @@ def load_race(
     test_df["log_cadence"] = np.log(test_df["cadence"])
     test_df["log_cadence_delayed"] = np.log(test_df["cadence_delayed"])
     test_df["diff_cadence"] = test_df["cadence"].diff()
-    test_df["diff_cadence_delayed"] = test_df["log_cadence_delayed"].diff()
+    test_df["diff_cadence_delayed"] = test_df["cadence_delayed"].diff()
     test_df["sin_cadence_delayed"] = np.sin(test_df.cadence_delayed)
     test_df["cos_cadence_delayed"] = np.cos(test_df.cadence_delayed)
     test_df["tan_cadence_delayed"] = np.tan(test_df.cadence_delayed)

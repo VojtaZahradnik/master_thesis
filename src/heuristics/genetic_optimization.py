@@ -7,7 +7,7 @@ from numpy.random import randint, uniform
 from tqdm import tqdm
 
 from src.heuristics.random_shooting import get_form
-from src.modules.evl import calc_rmse
+from src.modules.evl import rmse
 from src.modules.pred import predict
 from src.modules.spec import ols_form
 
@@ -51,7 +51,7 @@ def generic_func(
     form = get_form(list(cols), endog=endog)
     result = ols_form(train_df, form)
     pred_ols = predict(test_df, result)
-    return calc_rmse(test_df[endog], pred_ols)
+    return rmse(test_df[endog], pred_ols)
 
 
 def mutation(cols: list, r_mut: int, full_form: list):
