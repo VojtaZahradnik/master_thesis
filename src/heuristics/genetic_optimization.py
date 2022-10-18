@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from numpy.random import randint, uniform
 from tqdm import tqdm
-
+import csv
 from src.heuristics.random_shooting import get_form
 from src.modules.evl import rmse
 from src.modules.pred import predict
@@ -122,9 +122,18 @@ def genetic_algorithm(
                 print(f'New best: {best_eval}')
 
         children = []
+        sorted_cols = [x for _, x in sorted(zip(scores, pop))]
         for i in range(0, len(pop), 2):
-            p1, p2 = proportionate_selection(pop, scores), proportionate_selection(pop, scores)
+            # p1, p2 = tournament_selection(pop, scores), tournament_selection(pop, scores)
+            p1, p2 = sorted_cols[0], sorted_cols[1]
             for c in crossover(p1, p2, r_cross):
                 children.append(mutation(c, r_mut, full_col))
         pop = children
+
+    data = [['enhanced_speed', best_eval, best]]
+    file = open('loss_functions.csv', 'a+', newline='')
+    with file:
+        write = csv.writer(file)
+        write.writerows(data)
+
     return [best, best_eval]
