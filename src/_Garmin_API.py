@@ -19,6 +19,10 @@ class _GarminAPI:
         Initial function to determine basic variables
         """
         self.athlete_name = athlete_name
+
+        if(conf['Paths']['raw'] not in os.listdir()):
+            os.mkdir(conf['Paths']['raw'])
+
         if(self.athlete_name not in os.listdir(conf['Paths']['raw'])):
             os.mkdir(os.path.join(conf['Paths']['raw'],self.athlete_name))
         self.end_date = None

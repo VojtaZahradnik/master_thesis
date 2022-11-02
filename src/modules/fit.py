@@ -51,7 +51,7 @@ def load_pcls(athlete_name: str, activity_type: str, path_to_load: str) -> list:
     :return: data from pickles in list of dataframes
     """
     dfs = []
-    files = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.pcl"))
+    files = sorted(glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.pcl")))
     if len(files) != 0:
         for x in tqdm(range(len(files))):
             try:
@@ -102,7 +102,7 @@ def get_race_index(df: pd.DataFrame, date: str) -> int:
 def get_train_test_df(data: list, ratio= 0.8) -> (pd.DataFrame, pd.DataFrame):
     concated_data = pd.concat(data)
     train_df = concated_data[0:round(len(concated_data) * ratio)]
-    train_df = train_df + concated_data[0:len(train_df) + get_diff(concated_data,train_df)]
+    train_df = concated_data[0:len(train_df) + get_diff(concated_data,train_df)]
     test_df = concated_data[len(train_df):]
 
     return clean_data(train_df), clean_data(test_df)
@@ -118,7 +118,6 @@ def get_test_valid_df(test_df: pd.DataFrame):
 
 def get_diff(concated_data: pd.DataFrame, df: pd.DataFrame) -> int:
     break_day = concated_data[len(df):].index[0].date()
-
     counter = 0
     for x in concated_data[len(df):].index:
         if (x.date() == break_day):
