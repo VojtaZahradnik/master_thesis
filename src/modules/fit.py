@@ -127,4 +127,4 @@ def get_diff(concated_data: pd.DataFrame, df: pd.DataFrame) -> int:
     return counter
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    return df.replace([np.inf, -np.inf], np.nan).dropna(how='all').drop_duplicates()
+    return df.replace([np.inf, -np.inf], np.nan).dropna(axis=1).drop_duplicates()
