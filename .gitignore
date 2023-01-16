@@ -10,3 +10,4 @@ src/modules/__pycache__
 /strava_tokens.json
 /src/research/.ipynb_checkpoints/
 /src/heuristics/__pycache__/
+/feature_eng.csv

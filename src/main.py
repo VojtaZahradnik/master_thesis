@@ -17,6 +17,7 @@ def main():
     )
     args = my_parser.parse_args()
     dict_param = vars(args)
+    print(dict_param)
     # eval(vars(args[0])["module"]).input_cli(conf=conf, log=log)
 
     my_parser.set_defaults()
