@@ -3,6 +3,9 @@ from pathlib import Path
 
 # Some tricky stuff for path handling, opt. in the future
 # For everyone is the same path something/master_thesis/
+import sys
+sys.path.insert(0,'/home/zahradnik/PycharmProjects/master_thesis')
+
 abspath = os.path.abspath(__file__)
 print(abspath)
 os.chdir(os.path.dirname(abspath))

@@ -36,6 +36,8 @@ def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
     :param athlete_name: Name of the athlete.
     """
     start = time.monotonic()
+    [os.remove(file) for file in glob.glob(os.path.join(conf['Paths']['fit'], conf['Athlete']['name'], "*.fit"))]
+
     files = glob.glob(os.path.join(path_to_load, athlete_name, "*.zip"))
     if(files == []):
         files = glob.glob(os.path.join(path_to_load, athlete_name, "*.gz"))
@@ -67,6 +69,8 @@ def sort_activities(athlete_name: str, path_to_save: str):
     :param path_to_save: save path of sorted zahradnik
     """
     files = glob.glob(os.path.join(conf['Paths']['fit'], athlete_name, "*.fit"))
+    [shutil.rmtree(file) for file in glob.glob(os.path.join(conf['Paths']['fit'], athlete_name, "*")) if os.path.isdir(file)]
+
     if(len(files)!=0):
         start = time.monotonic()
         for x in tqdm(range(len(files))):

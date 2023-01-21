@@ -11,3 +11,4 @@ src/modules/__pycache__
 /src/research/.ipynb_checkpoints/
 /src/heuristics/__pycache__/
 /feature_eng.csv
+/src/research/vzahradnik.json

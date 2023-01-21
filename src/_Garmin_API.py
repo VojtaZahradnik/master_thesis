@@ -6,6 +6,7 @@ from garminconnect import (
     GarminConnectTooManyRequestsError,
     GarminConnectAuthenticationError,
 )
+import glob
 from src.modules import conf, fit, raw_data, preprocess, df_columns
 from tqdm import tqdm
 
@@ -25,6 +26,9 @@ class _GarminAPI:
 
         if(self.athlete_name not in os.listdir(conf['Paths']['raw'])):
             os.mkdir(os.path.join(conf['Paths']['raw'],self.athlete_name))
+        else:
+            [os.remove(file) for file in glob.glob(os.path.join(conf['Paths']['raw'], self.athlete_name,"*"))]
+
         self.end_date = None
         self.start_date = None
         self.api = Garmin(conf['Garmin']['email'], conf['Garmin']['pass'])
