@@ -10,7 +10,7 @@ import fitparse
 import numpy as np
 import pandas as pd
 import scipy.interpolate
-from meteostat import Daily, Point
+from meteostat import Daily, Point, Monthly
 from src.modules import conf, df_columns, log
 from pandas import DataFrame
 from tqdm import tqdm
@@ -56,12 +56,13 @@ def get_meteo(lat: str, long: str, alt: str, day: str) -> Union[list[Any], DataF
         transfer_num = 11930465
         if not (isinstance(alt, int)):
             alt = 200
-        loc = Point(int(lat) / transfer_num, int(long) / transfer_num, int(alt))
+        loc = Point(lat, long, alt)
         day = datetime(
             day.year,
             day.month,
             day.day,
         )
+
         data = Daily(loc, day, day)
         data = data.fetch()
         if len(data != 0):
@@ -86,10 +87,10 @@ def calc_slope_steep(df: pd.DataFrame, threshold=45) -> list[int]:
     slope_steep = [0] * len(df)
     for i in range(1, len(df)):
         dist = df["distance"][i] - df["distance"][i - 1]
-        elev = np.max([np.abs(df["slope_descent"][i]), df["slope_ascent"][i]])
-        tmp = -1 if df["slope_descent"][i] < 0 else 1
+        elev = np.max([df["slope_descent"][i], df["slope_ascent"][i]])
+        tmp = - 1 if df["slope_descent"][i] > df["slope_ascent"][i] else 1
         if dist != 0:
-            steep = tmp * (elev / dist) * 100
+            steep = tmp* (elev / dist) * 100
             if steep > threshold:
                 steep = threshold
             elif steep < -threshold:
@@ -143,9 +144,7 @@ def parse_fit(filename: str, df_columns: list) -> tuple[DataFrame, Any]:
 
 def basic_outlier_detect(
     df: pd.DataFrame,
-    activity_type: str,
-    threshold_cycling: [],
-    threshold_running: [],
+    activity_type: str
 ) -> pd.DataFrame:
     """
     Method for basic outlier detection based just on values
@@ -154,6 +153,9 @@ def basic_outlier_detect(
     :param threshold_cycling: Threshold for cycling
     :param threshold_running: Threshold for running
     """
+
+    threshold_running = [(50, 210), (3, 100), (30, 180)]
+    threshold_cycling = [(60, 210), (3, 25), (50, 210)]
 
     columns = [
         x for x in df_columns if x not in ["timestamp", "distance", "enhanced_altitude"]
@@ -186,8 +188,52 @@ def calc_dist_diff(distance: pd.Series) -> list:
         diff.append(distance[x] - distance[x - 1])
     return diff
 
+def preprocessing(activity_type: str,
+                  athlete_name:str,
+                  df_columns: list,
+                  path_to_load="fit_files",
+                  ) -> list:
 
-def preprocessing(
+    warnings.filterwarnings("ignore")
+
+    files = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
+
+    for file in tqdm(files):
+        df, record = parse_fit(file, df_columns)
+        df.dropna(inplace=True)
+
+        if len(df) != 0 and (set(df.columns) == set(df_columns)):
+            df.set_index(["timestamp"], inplace=True)
+            df["enhanced_speed"] = [x * 3.6 for x in df["enhanced_speed"]]
+
+            df["temp"], df["wind_speed"], df["wind_direct"], df["rain"] = get_meteo(
+                lat=record.get_value("position_lat"),
+                long=record.get_value("position_long"),
+                alt=df["enhanced_altitude"][0],
+                day=df.index[0],
+            )
+
+            df["dist_diff"] = calc_dist_diff(df.distance)
+            if "cadence" in df_columns:
+                df["cadence_delayed"] = calc_delayed(df.cadence)
+
+            df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude)
+
+            df["slope_ascent"], df["slope_descent"] = calc_ascent_descent(df)
+
+            df["slope_steep"] = calc_slope_steep(df)
+
+            df = basic_outlier_detect(
+                df=df,
+                activity_type=activity_type
+            )
+
+            print(len(df.columns))
+
+
+        break
+
+def preprocessing_dep(
     activity_type: str,
     athlete_name: str,
     df_columns: list,

@@ -189,7 +189,7 @@ def plot(df: pd.DataFrame, pred: list, true_data: int, endog="enhanced_speed", s
     ax1.set_xlabel("Timestamp")
     ax1.set_ylabel("Speed", color=color)
     pred = pred[1:]
-    x = np.linspace(0, 20, len(pred))
+    x = np.linspace(min(df.distance)/1000,max(df.distance)/1000, len(pred))
 
     spl = scipy.interpolate.UnivariateSpline(x, df.enhanced_altitude[1:])
     altitude = spl(x)
@@ -213,7 +213,7 @@ def plot(df: pd.DataFrame, pred: list, true_data: int, endog="enhanced_speed", s
     ax1.legend(loc="upper left")
     ax2.legend(loc="upper right")
 
-    return fig
+    return fig,ax1
 
 
 def save_figure(

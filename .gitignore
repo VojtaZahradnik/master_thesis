@@ -12,3 +12,4 @@ src/modules/__pycache__
 /src/heuristics/__pycache__/
 /feature_eng.csv
 /src/research/vzahradnik.json
+*train_df*
