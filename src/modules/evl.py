@@ -186,7 +186,7 @@ def plot(df: pd.DataFrame, pred: list, true_data: int, endog="enhanced_speed", s
     """
     fig, ax1 = plt.subplots()
     color = "tab:red"
-    ax1.set_xlabel("Timestamp")
+    ax1.set_xlabel("Distance")
     ax1.set_ylabel("Speed", color=color)
     pred = pred[1:]
     x = np.linspace(min(df.distance)/1000,max(df.distance)/1000, len(pred))

@@ -23,4 +23,4 @@ log = log.get_logger()
 conf = _Config(config_name="config.yaml").get_config_file()
 
 
-df_columns = ['heart_rate','enhanced_speed','distance','enhanced_altitude','cadence','temp','wind_speed','wind_direct','rain','slope_steep','slope_ascent','slope_descent']
+df_columns = ['heart_rate','enhanced_speed','distance','enhanced_altitude','cadence','temp','wind_speed','wind_direct','rain','slope_steep','slope_ascent','slope_descent','dist_diff']
