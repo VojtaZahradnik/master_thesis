@@ -92,12 +92,13 @@ def get_race_index(df: pd.DataFrame, date: str) -> int:
     :param date: start time of modules activity
     :return: index of selected activity
     """
-    pos = -1
     for x in range(len(df)):
-        if str(df[x].index[0].strftime("%Y-%m-%d-%H-%M")) == date:
-            pos = x
+        if str(df[x].index[0].strftime("%Y-%m-%d-%H-%M")) < date:
+            continue
+        else:
             break
-    return pos
+    return x
+
 
 def get_train_test_df(data: list, ratio= 0.8) -> (pd.DataFrame, pd.DataFrame):
     concated_data = pd.concat(data)
