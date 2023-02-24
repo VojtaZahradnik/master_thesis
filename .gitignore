@@ -13,3 +13,5 @@ src/modules/__pycache__
 /feature_eng.csv
 /src/research/vzahradnik.json
 *train_df*
+*train.csv*
+*test.csv*
