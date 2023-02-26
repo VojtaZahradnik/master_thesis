@@ -176,7 +176,7 @@ METRICS = {
 def eval_all(actual: pd.Series, predicted: pd.Series):
     return evaluate(actual, predicted, metrics=set(METRICS.keys()))
 
-def plot(df: pd.DataFrame, pred: list, true_data: int, endog="enhanced_speed", spline=False, lwidth=1):
+def plot(df: pd.DataFrame, pred: list, true_data= [], endog="enhanced_speed", spline=False, lwidth=1):
     """
     Plot graph with difference between true values and predicted values.
     :param df: tested dataframe
@@ -194,13 +194,15 @@ def plot(df: pd.DataFrame, pred: list, true_data: int, endog="enhanced_speed", s
     spl = scipy.interpolate.UnivariateSpline(x, df.enhanced_altitude[1:])
     altitude = spl(x)
 
-    ax1.plot(x, true_data[1:], "b", label="True data")
-    ax1.tick_params(axis="y", labelcolor=color)
+    if true_data != []:
+        ax1.plot(x, true_data[1:], "b", label="True data")
+        ax1.tick_params(axis="y", labelcolor=color)
 
     if spline:
         spl = scipy.interpolate.UnivariateSpline(x, pred)
         pred = spl(x)
-    ax1.plot(x, pred, "r", label="Prediction", linewidth=lwidth)
+    ax1.plot(x, pred, "r", label=endog, linewidth=lwidth)
+    ax1.plot(x,np.linspace(np.mean(pred),np.mean(pred),len(pred)),label="Mean")
 
     ax2 = ax1.twinx()
     color = "tab:blue"
