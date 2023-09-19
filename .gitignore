@@ -15,3 +15,5 @@ src/modules/__pycache__
 *train_df*
 *train.csv*
 *test.csv*
+/bechovice.gpx
+/krizova_desitka.gpx

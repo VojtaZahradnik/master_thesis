@@ -13,21 +13,6 @@ from tqdm import tqdm
 Basic extract and sort of fit files.
 """
 
-
-def input_cli():
-    """
-    Solution for CLI input without __init__.
-    """
-    unpack(
-        path_to_load=conf["Paths"]["raw"],
-        path_to_save=conf["Paths"]["fit"],
-        athlete_name=conf["Athlete"]["name"],
-    )
-    sort_activities(
-        athlete_name=conf["Athlete"]["name"], path_to_save=conf["Paths"]["fit"]
-    )
-
-
 def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
     """
     Unpack fit files from compressed format.
@@ -57,10 +42,6 @@ def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
 
     else:
         log.warning(f"Raw data {path_to_load} folder for unpack is empty")
-
-def divide_chunks(l, n):
-    for i in range(0, len(l), n):
-        yield l[i:i + n]
 
 def sort_activities(athlete_name: str, path_to_save: str):
     """

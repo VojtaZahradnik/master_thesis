@@ -1,45 +1,27 @@
 import glob
 import math
 import os
-import time
+from feature_engine.timeseries.forecasting import WindowFeatures
+from scipy.ndimage import uniform_filter1d
+from feature_engine.datetime import DatetimeFeatures
+
 import warnings
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Union
 
 import fitparse
 import numpy as np
 import pandas as pd
 import scipy.interpolate
-from meteostat import Daily, Point, Monthly
+from meteostat import Daily, Point, Hourly
 from src.modules import conf, df_columns, log
 from pandas import DataFrame
 from tqdm import tqdm
+import shutil
 
 """
 Load values from fit files and add some new variables from external libraries
 """
-
-
-def input_cli():
-    """
-    Solution for CLI input without __init__
-    """
-    if conf["Athlete"]["activity_type"] == "run":
-        df_columns.append("cadence")
-
-    data = preprocessing(
-        activity_type=conf["Athlete"]["activity_type"],
-        athlete_name=conf["Athlete"]["name"],
-        df_columns=df_columns,
-        path_to_load=conf["Paths"]["fit"],
-    )
-    save_pcls(
-        dfs=data,
-        activity_type=conf["Athlete"]["activity_type"],
-        athlete_name=conf["Athlete"]["name"],
-        path_to_save=conf["Paths"]["pcl"],
-    )
-
 
 def get_meteo(lat: str, long: str, alt: str, day: str) -> Union[list[Any], DataFrame]:
     """
@@ -50,28 +32,34 @@ def get_meteo(lat: str, long: str, alt: str, day: str) -> Union[list[Any], DataF
     :param day: day of the activity start
     :return: weather information about start location or basic values, when meteostat don't have data about location
     """
-    lst = [15, 0, 0, 0]
+    lst = [15, 0, 0, 0, 0]
     if lat is not None and long is not None:
 
         transfer_num = 11930465
-        if not (isinstance(alt, int)):
-            alt = 200
-        loc = Point(lat, long, alt)
+        if lat > 100:
+            loc = Point(lat/transfer_num, long/transfer_num, int(alt))
+        else:
+            loc = Point(lat, long, int(alt))
+
         day = datetime(
             day.year,
             day.month,
             day.day,
+            day.hour,
         )
 
-        data = Daily(loc, day, day)
+        data = Hourly(loc, day - timedelta(hours=2), day + timedelta(hours=2))
         data = data.fetch()
         if len(data != 0):
             lst = [
-                data["tavg"][0],
-                data["wspd"][0],
-                data["wdir"][0],
+                data["temp"][0],
+                data["rhum"][0],
                 data["prcp"][0],
+                data["snow"][0],
+                data["wspd"][0],
             ]
+        else:
+            print(f"WARN: {day} has basic weather values")
 
         lst = [x if not math.isnan(x) else 0 for x in lst]
     return lst
@@ -144,49 +132,55 @@ def parse_fit(filename: str, df_columns: list) -> tuple[DataFrame, Any]:
 
 def basic_outlier_detect(
     df: pd.DataFrame,
-    activity_type: str
 ) -> pd.DataFrame:
     """
     Method for basic outlier detection based just on values
-    :param df: dataframe for detection of outliers
-    :param activity_type: name of the activity type
-    :param threshold_cycling: Threshold for cycling
-    :param threshold_running: Threshold for running
     """
 
-    threshold_running = [(50, 210), (3, 100), (30, 180)]
-    threshold_cycling = [(60, 210), (3, 25), (50, 210)]
-
-    columns = [
-        x for x in df_columns if x not in ["timestamp", "distance", "enhanced_altitude"]
-    ]
-    if activity_type == "cycling":
-        threshold = threshold_cycling
-    else:
-        threshold = threshold_running
-    for i, j in zip(columns, threshold):
-        df = df[df[i] > j[0]]
-        df = df[df[i] < j[1]]
-
-    if "cadence" in df_columns:
-        df["cadence"] = [i if i > 1 else 1 for i in df["cadence"]]
-        df["cadence_delayed"] = [i if i > 1 else 1 for i in df["cadence_delayed"]]
+    df["cadence"] = df.cadence.apply(lambda i: i if 30 < i < 110 else np.mean(df.cadence))
+    df["heart_rate"] = df.heart_rate.apply(lambda i: i if 50 < i < 210 else np.mean(df.heart_rate))
+    df["enhanced_speed"] = df.enhanced_speed.apply(lambda i: i if 5 < i < 30 else np.mean(df.enhanced_speed))
     return df
 
 
-def calc_delayed(lst: pd.Series) -> pd.Series:
+def calc_delayed(lst: pd.Series, window = 1) -> pd.Series:
     """
     Method for calculation of delayed variable in time t=-1
     :param lst: list of variable
     """
-    return lst.rolling(1, min_periods=1).mean()
+    return lst.rolling(window, min_periods=1).mean()
 
+def get_hr_zone(hr: pd.Series):
+    mean_hr = np.mean(hr)
+    if mean_hr < 140:
+        zone = 1
+    elif mean_hr > 140 and mean_hr < 156:
+        zone = 2
+    elif mean_hr > 156 and mean_hr < 166:
+        zone = 3
+    elif mean_hr > 166 and mean_hr < 175:
+        zone = 4
+    elif mean_hr > 175:
+        zone = 5
+    return zone
 
-def calc_dist_diff(distance: pd.Series) -> list:
-    diff = [0.00]
-    for x in range(1, len(distance)):
-        diff.append(distance[x] - distance[x - 1])
-    return diff
+def calc_windows(df, lagged, cols):
+    for lag in range(1,lagged):
+        wft = WindowFeatures(variables=cols,
+                             window =lag)
+        df = wft.fit_transform(df)
+        df.fillna(0, inplace=True)
+    return df
+
+def calc_dt(df,cols, date):
+    df["date"] = date
+    dtf = DatetimeFeatures(features_to_extract=cols)
+    return dtf.fit_transform(df)
+
+def calc_moving(df,col, max_range):
+    for x in range(10,max_range,10):
+        df[f"moved_{col}_{x}"] = uniform_filter1d(df[col], size=x)
+    return df
 
 def preprocessing(activity_type: str,
                   athlete_name:str,
@@ -195,140 +189,72 @@ def preprocessing(activity_type: str,
                   ) -> list:
 
     warnings.filterwarnings("ignore")
+    # path=os.path.join(conf["Paths"]["pcl"], athlete_name, activity_type)
+    # if os.path.exists(path):
+    #     shutil.rmtree(path)
 
     files = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
-
     for file in tqdm(files):
         df, record = parse_fit(file, df_columns)
         df.dropna(inplace=True)
 
         if len(df) != 0 and (set(df.columns) == set(df_columns)):
+            df_len = len(df)
             df.set_index(["timestamp"], inplace=True)
-            df["enhanced_speed"] = [x * 3.6 for x in df["enhanced_speed"]]
+            df["enhanced_speed"] = df["enhanced_speed"].apply(lambda i: i * 3.6)
 
-            df["temp"], df["wind_speed"], df["wind_direct"], df["rain"] = get_meteo(
+            df["temp"], df["humidity"], df["rain"], df["snow"], df["wind_speed"] = get_meteo(
                 lat=record.get_value("position_lat"),
                 long=record.get_value("position_long"),
                 alt=df["enhanced_altitude"][0],
                 day=df.index[0],
             )
 
-            df["dist_diff"] = calc_dist_diff(df.distance)
-            if "cadence" in df_columns:
-                df["cadence_delayed"] = calc_delayed(df.cadence)
-
-            df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude)
+            df["dist_diff"] = df.distance.diff(1)
 
             df["slope_ascent"], df["slope_descent"] = calc_ascent_descent(df)
 
             df["slope_steep"] = calc_slope_steep(df)
 
             df = basic_outlier_detect(
-                df=df,
-                activity_type=activity_type
+                df=df
             )
 
-            print(len(df.columns))
+            df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude, window=1)
+            df["cadence_altitude_delayed"] = calc_delayed(df.cadence, window=1)
 
+            df["hr_zone"] = get_hr_zone(df.heart_rate)
 
-        break
+            df = calc_dt(df, cols=['month','week','hour','minute','second'], date=df.index)
 
-def preprocessing_dep(
-    activity_type: str,
-    athlete_name: str,
-    df_columns: list,
-    path_to_load="fit_files",
-    run=None,
-    cyc=None,
-) -> list:
-    """
-    Load zahradnik from Fit files and add some needed variables (slope steep, weather information)
-    :param athlete_name: name of the athlete
-    :param activity_type: type of the zahradnik used in model
-    :param df_columns: dataframe columns
-    :param path_to_load: pickle file path
-    :param run: Running thresholds
-    :param cyc: Cycling thresholds
-    :return: loaded list with dataframes of valuable zahradnik
-    """
-    if run is None:
-        run = [(50, 210), (3, 100), (30, 180)]
-    if cyc is None:
-        cyc = [(60, 210), (3, 25), (50, 210)]
+            df = calc_windows(df=df,
+                              lagged=18,
+                              cols=["slope_steep", "slope_ascent", "slope_descent", "heart_rate", "cadence"])
 
-    start = time.monotonic()
-    warnings.filterwarnings("ignore")
+            df = calc_moving(df=df, col="heart_rate",
+                             max_range=110)
+            df = calc_moving(df=df, col="cadence",
+                             max_range=110)
 
-    dfs = []
-    form = []
-    days = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
-    for x in tqdm(range(len(days))):
-        try:
-            df, record = parse_fit(days[x], df_columns)
             df.dropna(inplace=True)
-            if len(df) != 0 and (set(df.columns) == set(df_columns)):
-                df.set_index(["timestamp"], inplace=True)
-                df["enhanced_speed"] = [x * 3.6 for x in df["enhanced_speed"]]
 
-                df["temp"], df["wind_speed"], df["wind_direct"], df["rain"] = get_meteo(
-                    record.get_value("position_lat"),
-                    record.get_value("position_long"),
-                    df["enhanced_altitude"][0],
-                    df.index[0],
-                )
+            if(df_len != len(df)): print("Nerovná se", df_len, len(df))
 
-                df["dist_diff"] = calc_dist_diff(df.distance)
-                if "cadence" in df_columns:
-                    df["cadence_delayed"] = calc_delayed(df.cadence)
-
-                df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude)
-
-                (
-                    df["slope_ascent"],
-                    df["slope_descent"],
-                ) = calc_ascent_descent(df)
-
-                df["slope_steep"] = calc_slope_steep(df)
-
-                if form == []:
-                    form = gen_fce_form(df=df, endog="enhanced_speed")
-                for k in form:
-                    df[f"{k[0]}_{k[2]}"] = eval(k[1])
-
-                df = basic_outlier_detect(
-                    df,
-                    activity_type,
-                    threshold_running=run,
-                    threshold_cycling=cyc,
-                )
-            else:
-                continue
-
-        except RuntimeError as e:
-            log.error("RuntimeError in preprocessing")
-            log.error(e)
-        except ValueError as e:
-            log.erorr("Value error in preprocessing")
-            log.error(e)
-        df.dropna(inplace=True)
-        if len(df) != 0:
-            dfs.append(df)
-
-    log.info(
-        f"{len(days)} files was preprocessed after {round(time.monotonic() - start,2)}"
-    )
-    return dfs
+            save_pcl(df,
+                     activity_type=activity_type,
+                     athlete_name=athlete_name,
+                     path_to_save=conf["Paths"]["pcl"])
 
 
-def save_pcls(
-    dfs: list,
+def save_pcl(
+    df: list,
     activity_type: str,
     athlete_name: str,
     path_to_save: str,
 ):
     """
     Save loaded dataframes into pickles
-    :param dfs: list of dataframes to save into pickles
+    :param df: list of dataframes to save into pickles
     :param athlete_name: name of the athlete
     :param activity_type: type of the activity
     :param path_to_save: save path of pickles
@@ -340,15 +266,15 @@ def save_pcls(
 
     if athlete_name not in os.listdir(path_to_save):
         os.mkdir(os.path.join(path_to_save, athlete_name))
+
     if activity_type not in os.listdir(os.path.join(path_to_save, athlete_name)):
         os.mkdir(os.path.join(path_to_save, athlete_name, activity_type))
 
-    for x in tqdm(range(len(dfs))):
-        dfs[x].to_pickle(
-            os.path.join(path, dfs[x].index[0].strftime("%Y%m%d%H%M") + ".pcl")
+    df.to_pickle(
+        os.path.join(path, df.index[0].strftime("%Y%m%d%H%M") + ".pcl")
         )
 
-    log.info(f"{len(dfs)} files saved into pickles")
+    log.info(f"{len(df)} files saved into pickles")
 
 
 def segment_elev(df: pd.DataFrame) -> list[int]:
@@ -395,111 +321,3 @@ def segment_elev(df: pd.DataFrame) -> list[int]:
         else:
             segments_asc.append(i)
     return get_elev()
-
-
-def gen_fce_form(df: pd.DataFrame, endog: str) -> list:
-    """
-    Function for generate all possible combinations between columns and basic math. functions
-    :param train_df: Dataframe with columns
-    :param endog: endogenous variable
-    """
-
-    possibilities = [x for x in list(df.columns) if x != endog]
-    form_full = []
-    for x in possibilities:
-        if not (((df[x] <= 0).any().any())):
-            form_full.append(("log", f'np.log(df["{x}"])', x))
-        form_full.append(("sin", f'np.sin(df["{x}"])', x))
-        form_full.append(("cos", f'np.cos(df["{x}"])', x))
-        form_full.append(("tan", f'np.tan(df["{x}"])', x))
-        form_full.append(("diff", f'df["{x}"].diff()', x))
-
-    return form_full
-
-
-def load_race(
-    conf: dict, train_df: pd.Series, path: str, day_of_race: str, columns=None
-):
-    warnings.filterwarnings("ignore")
-    if columns is None:
-        columns = ["distance", "enhanced_altitude"]
-    test_df, record = parse_fit(path, columns)
-    day_of_race = datetime.strptime(day_of_race, "%Y-%m-%d-%H-%M")
-    test_df = get_meteo(
-        record.get_value("position_lat"),
-        record.get_value("position_long"),
-        test_df["enhanced_altitude"][0],
-        day_of_race,
-        test_df,
-    )
-
-    test_df["dist_diff"] = calc_dist_diff(test_df.distance)
-    test_df["enhanced_altitude_delayed"] = calc_delayed(test_df.enhanced_altitude)
-    (
-        test_df["slope_ascent"],
-        test_df["slope_descent"],
-    ) = calc_ascent_descent(test_df)
-    test_df["slope_steep"] = calc_slope_steep(test_df)
-
-    df = test_df
-    form = gen_fce_form(df)
-    for k in form:
-        if k[0] not in df.columns:
-            df[f"{k[0]}_{k[2]}"] = eval(k[1])
-
-    test_df = df
-    test_df.dropna(inplace=True)
-    test_df.drop_duplicates(inplace=True)
-    from src.heuristics.random_shooting import get_form
-    from src.modules.fit import clean_data
-    from src.modules.pred import predict
-    from src.modules.spec import ols_form
-
-    train_df, test_df = clean_data(train_df), clean_data(test_df)
-
-    # form = get_form(train_df.columns.intersection(test_df.columns), endog='heart_rate')
-    form = get_form(
-        test_df.columns.intersection(conf["best_loss_func_hr"]),
-        endog="heart_rate",
-    )
-    heart_model = ols_form(train_df, form)
-    test_df["heart_rate"] = predict(test_df, heart_model)
-
-    test_df = clean_data(test_df)
-
-    test_df["log_heart_rate"] = np.log(test_df["heart_rate"])
-    test_df["diff_heart_rate"] = test_df["heart_rate"].diff()
-    test_df["sin_heart_rate"] = np.sin(test_df["heart_rate"])
-    test_df["cos_heart_rate"] = np.cos(test_df["heart_rate"])
-    test_df["tan_heart_rate"] = np.tan(test_df["heart_rate"])
-
-    # form = get_form(list(conf['best_loss_func_cad']), endog='cadence')
-    # form = get_form(train_df.columns.intersection(test_df.columns), endog='cadence')
-    form = get_form(
-        test_df.columns.intersection(conf["best_loss_func_cad"]),
-        endog="cadence",
-    )
-
-    cadence_model = ols_form(train_df, form)
-    test_df["cadence"] = predict(test_df, cadence_model)
-    test_df["cadence"] = [
-        x if not math.isnan(x) else test_df["cadence"].mean()
-        for x in test_df["cadence"]
-    ]
-
-    test_df = clean_data(test_df)
-
-    test_df["cadence_delayed"] = calc_delayed(test_df["cadence"])
-    test_df["cadence_delayed"] = [x if x > 1 else 1 for x in test_df["cadence_delayed"]]
-    test_df["log_cadence"] = np.log(test_df["cadence"])
-    test_df["log_cadence_delayed"] = np.log(test_df["cadence_delayed"])
-    test_df["diff_cadence"] = test_df["cadence"].diff()
-    test_df["diff_cadence_delayed"] = test_df["cadence_delayed"].diff()
-    test_df["sin_cadence_delayed"] = np.sin(test_df.cadence_delayed)
-    test_df["cos_cadence_delayed"] = np.cos(test_df.cadence_delayed)
-    test_df["tan_cadence_delayed"] = np.tan(test_df.cadence_delayed)
-    test_df["sin_cadence"] = np.sin(test_df["cadence"])
-    test_df["cos_cadence"] = np.cos(test_df["cadence"])
-    test_df["tan_cadence"] = np.tan(test_df["cadence"])
-
-    return clean_data(test_df)

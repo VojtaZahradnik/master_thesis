@@ -12,36 +12,6 @@ from src.modules import conf, log, spec
 Model Fit with some mandatory functions
 """
 
-
-def input_cli(endo_var: str):
-    """
-    Solution for CLI input without __init__
-    """
-    data = load_pcls(
-        conf["Athlete"]["name"],
-        conf["Athlete"]["activity_type"],
-        conf["Paths"]["pcl"],
-    )
-
-
-    ratio = round(0.8 * len(data))
-    train_df = pd.concat(data[0:ratio])
-
-    import src.heuristics.random_shooting as random_shooting
-
-
-    df = fit_df(
-        train_df=train_df,
-        form=random_shooting.get_form(train_df, endo_var),
-    )
-    # log.info("Fitted")
-    # df.to_csv(
-    #     os.path.join(conf["Paths"]["output"], f'{conf["Athlete"]["name"]}_fitted.csv')
-    # )
-    # log.info(f'Csv saved into {conf["Paths"]["output"]}')
-    #
-
-
 def load_pcls(athlete_name: str, activity_type: str, path_to_load: str) -> list:
     """
     Load pickles files from load path
@@ -60,7 +30,7 @@ def load_pcls(athlete_name: str, activity_type: str, path_to_load: str) -> list:
                 log.error("Runtime error in loading of pickles.")
         log.info(f"{len(files)} pickle files successfully loaded")
     else:
-        log.error("Pickle folder is empty")
+        log.error("Pickle bjetca is empty")
         sys.exit(1)
 
     return dfs

@@ -15,41 +15,6 @@ Model evaluation with basic metrics of statistics
 
 EPSILON = 1e-10
 
-def input_cli():
-    """
-    Solution for CLI input without __init__
-    :param conf: Configuration dictionary
-    """
-
-    data = fit.load_pcls(
-        conf["Athlete"]["name"],
-        conf["Athlete"]["activity_type"],
-        conf["Paths"]["pcl"],
-    )
-
-    if conf["Athlete"]["test_activity"] != "":
-        index = fit.get_race_index(data, conf["Athlete"]["test_activity"])
-        train_df = pd.concat(data[0 : index - 1])
-        test_df = data[index]
-    else:
-        train_df = pd.concat(data[0 : len(data) - 1])
-        test_df = data[-1]
-
-    train_df, test_df = fit.clean_data(train_df), fit.clean_data(test_df)
-    from src.heuristics import random_shooting
-
-    result = spec.ols_form(
-        train_df, random_shooting.get_form(train_df, "enhanced_speed")
-    )
-    ypred = predict.predict(test_df, result)
-    evl.save_figure(
-        true=test_df[conf["endo_var"]],
-        pred=ypred,
-        name=f'{conf["Athlete"]["name"]}_prediction',
-        path_to_save=conf["Paths"]["output"],
-    )
-    log.info("Img saved into output")
-    log.info(f"RMSE: {calc_rmse(test_df.enhanced_speed, ypred)}")
 
 def error(actual: pd.Series, predicted: pd.Series) -> pd.Series:
     """
