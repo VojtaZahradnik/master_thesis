@@ -16,3 +16,4 @@ Paths:
   fit: 'fit_files'
   pcl: 'pcl_files'
   output: 'output'
+  test_activities: 'tracks'

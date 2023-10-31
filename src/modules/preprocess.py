@@ -4,7 +4,9 @@ import os
 from feature_engine.timeseries.forecasting import WindowFeatures
 from scipy.ndimage import uniform_filter1d
 from feature_engine.datetime import DatetimeFeatures
-
+from feature_engine.creation import MathFeatures
+from gpx_converter import Converter
+import haversine as hs
 import warnings
 from datetime import datetime, timedelta
 from typing import Any, Union
@@ -12,12 +14,10 @@ from typing import Any, Union
 import fitparse
 import numpy as np
 import pandas as pd
-import scipy.interpolate
-from meteostat import Daily, Point, Hourly
-from src.modules import conf, df_columns, log
+from meteostat import Point, Hourly
+from src.modules import conf, log
 from pandas import DataFrame
 from tqdm import tqdm
-import shutil
 
 """
 Load values from fit files and add some new variables from external libraries
@@ -142,6 +142,8 @@ def basic_outlier_detect(
     df["enhanced_speed"] = df.enhanced_speed.apply(lambda i: i if 5 < i < 30 else np.mean(df.enhanced_speed))
     return df
 
+def calc_dist(pos1: tuple,pos2: tuple) -> int:
+    return hs.haversine(pos1, pos2, unit=hs.Unit.METERS)
 
 def calc_delayed(lst: pd.Series, window = 1) -> pd.Series:
     """
@@ -185,7 +187,9 @@ def calc_moving(df,col, max_range):
 def preprocessing(activity_type: str,
                   athlete_name:str,
                   df_columns: list,
+                  func = ["sum","mean","min","max"],
                   path_to_load="fit_files",
+                  name= None
                   ) -> list:
 
     warnings.filterwarnings("ignore")
@@ -194,6 +198,7 @@ def preprocessing(activity_type: str,
     #     shutil.rmtree(path)
 
     files = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
+
     for file in tqdm(files):
         df, record = parse_fit(file, df_columns)
         df.dropna(inplace=True)
@@ -220,6 +225,11 @@ def preprocessing(activity_type: str,
                 df=df
             )
 
+            for fce in ["sum", "mean", "min", "max"]:
+                df = MathFeatures(variables=["heart_rate", "cadence"], func=fce).fit(df).transform(df)
+
+            df["peak"] = segment_elev(df)
+
             df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude, window=1)
             df["cadence_altitude_delayed"] = calc_delayed(df.cadence, window=1)
 
@@ -243,7 +253,8 @@ def preprocessing(activity_type: str,
             save_pcl(df,
                      activity_type=activity_type,
                      athlete_name=athlete_name,
-                     path_to_save=conf["Paths"]["pcl"])
+                     path_to_save=conf["Paths"]["pcl"],
+                     name=name)
 
 
 def save_pcl(
@@ -251,6 +262,7 @@ def save_pcl(
     activity_type: str,
     athlete_name: str,
     path_to_save: str,
+    name: str
 ):
     """
     Save loaded dataframes into pickles
@@ -260,7 +272,12 @@ def save_pcl(
     :param path_to_save: save path of pickles
     """
 
-    path = os.path.join(path_to_save, athlete_name, activity_type)
+    if name is None:
+        path = os.path.join(path_to_save, athlete_name, activity_type)
+        name = df.index[0].strftime("%Y%m%d%H%M")
+    else:
+        path = os.path.join("src","test_activities", athlete_name, activity_type)
+
     if path_to_save not in os.listdir():
         os.mkdir(path_to_save)
 
@@ -271,53 +288,87 @@ def save_pcl(
         os.mkdir(os.path.join(path_to_save, athlete_name, activity_type))
 
     df.to_pickle(
-        os.path.join(path, df.index[0].strftime("%Y%m%d%H%M") + ".pcl")
+        os.path.join(path, name + ".pcl")
         )
 
     log.info(f"{len(df)} files saved into pickles")
 
 
 def segment_elev(df: pd.DataFrame) -> list[int]:
-    # deprecated
-    def is_monotonic(A: list) -> bool:
-        return all(A[i] <= A[i + 1] for i in range(len(A) - 1)) or all(
-            A[i] >= A[i + 1] for i in range(len(A) - 1)
-        )
+    def isMonotonic(A):
+        return all(A[i] <= A[i + 1] for i in range(len(A) - 1)) or all(A[i] >= A[i + 1] for i in range(len(A) - 1))
 
-    def get_elev():
-        if len(segments_desc) == len(segments_asc):
-            elev = [x for y in zip(segments_desc, segments_asc) for x in y]
-        elif len(segments_asc) > len(segments_desc):
-            elev = [x for y in zip(segments_asc, segments_desc) for x in y] + [
-                segments_asc[-1]
-            ]
+    altitude = df.enhanced_altitude
+
+    segments = [(0, 0)]
+    peak_signs = []
+
+    for x in range(0, len(altitude)-1):
+        if not isMonotonic(altitude[segments[-1][1]:x]):
+            sign = -1 * np.sign(altitude[segments[-1][1]] - altitude[x])
+            peak_signs.append(sign)
+            segments[-1] = (segments[-1][0], x)
         else:
-            elev = [x for y in zip(segments_desc, segments_asc) for x in y] + [
-                segments_desc[-1]
-            ]
-        return elev
+            peak_signs.append(0)
 
-    segments = []
-    segments_asc = []
-    segments_desc = []
+    return peak_signs
 
-    xnew = np.linspace(0, 20, len(df.enhanced_altitude))
-    spl = scipy.interpolate.UnivariateSpline(xnew, df.enhanced_altitude)
-    altitude = spl(xnew)
+def load_test_activity(path: str, race_day: str):
+    df = Converter(input_file=path).gpx_to_dataframe()
 
-    tmp = 0
-    for x in range(len(altitude)):
-        if is_monotonic(altitude[tmp:x]):
-            continue
+    df["timestamp"] = df.time
+
+    df.drop("time",axis=1,inplace=True)
+    df.set_index("timestamp",inplace=True)
+
+    if "altitude" in df.columns:
+        df['enhanced_altitude'] = df.altitude
+        df.drop("altitude", axis=1, inplace=True)
+    else:
+        df['enhanced_altitude'] = 0
+        df.drop("altitude", axis=1, inplace=True)
+
+    df['dist_diff'] = [0] + [calc_dist(
+        (df['latitude'].iloc[x], df['longitude'].iloc[x]),
+        (df['latitude'].iloc[x + 1], df['longitude'].iloc[x + 1])) for x in range(len(df) - 1)]
+
+    df['distance'] = df['dist_diff'].cumsum()
+
+    df["temp"], df["humidity"], df["rain"], df["snow"], df["wind_speed"] = get_meteo(
+        df.latitude.iloc[0],
+        df.longitude.iloc[0],
+        df.enhanced_altitude.iloc[0],
+        datetime.strptime(race_day, '%Y-%m-%d-%H-%M')
+    )
+    df.drop(['latitude', 'longitude'], axis=1, inplace=True)
+
+    df["slope_ascent"], df["slope_descent"] = calc_ascent_descent(df)
+
+    df["slope_steep"] = calc_slope_steep(df)
+
+    df['hr_zone'] = 5
+
+    df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude, window=3)
+
+    #df["peak"] = [0] + segment_elev(df)
+
+    df = calc_windows(df=df,
+                           lagged=15,
+                           cols=["slope_steep", "slope_ascent", "slope_descent"])
+
+
+    df = calc_dt(df, cols=['month', 'week', 'hour', 'minute', 'second'], date=df.index)
+
+    return df
+
+def segment_data(data: list) -> tuple:
+    low_dist = []
+    high_dist = []
+    for act in data:
+        if np.max(act.distance) > 10000:
+            high_dist.append(act)
         else:
-            segments.append((tmp, x))
-            tmp = x
-    segments.append((tmp, x))
-    for i in segments:
-        for _ in i:
-            sign = -1 * np.sign(altitude[i[0]] - altitude[i[1]])
-        if sign == -1:
-            segments_desc.append(i)
-        else:
-            segments_asc.append(i)
-    return get_elev()
+            low_dist.append(act)
+
+    return low_dist, high_dist
+

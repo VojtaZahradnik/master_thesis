@@ -7,7 +7,7 @@ import pandas as pd
 import scipy.interpolate
 import seaborn as sns
 
-from src.modules import evl, fit, pred, spec, conf, log
+from src.modules import evl, fit, spec, conf, log
 
 """
 Model evaluation with basic metrics of statistics

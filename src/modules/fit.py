@@ -5,6 +5,7 @@ import sys
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import math
 
 from src.modules import conf, log, spec
 
@@ -98,4 +99,13 @@ def get_diff(concated_data: pd.DataFrame, df: pd.DataFrame) -> int:
     return counter
 
 def clean_data(df: pd.DataFrame) -> pd.DataFrame:
-    return df.replace([np.inf, -np.inf], np.nan).dropna(axis=1).drop_duplicates()
+    return df.replace([np.inf, -np.inf], np.nan).dropna(axis=0).drop_duplicates()
+
+def calc_final_time(distance: pd.Series, speed: pd.Series):
+    time = ((np.max(distance) / 1000) / np.mean(speed)) * 60
+    minutes = math.floor(time)
+    seconds = round((time - minutes) * 60)
+    if seconds == 60:
+        seconds = 0
+        minutes += 1
+    return f'Final time: {minutes}:{seconds}'
