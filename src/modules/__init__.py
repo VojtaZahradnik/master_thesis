@@ -24,3 +24,4 @@ conf = _Config(config_name="config.yaml").get_config_file()
 
 
 df_columns = ['timestamp','heart_rate','distance','enhanced_altitude','cadence','enhanced_speed']
+compare_features = ["enhanced_altitude","temp","rain","heart_rate","cadence","slope_ascent","slope_descent"]

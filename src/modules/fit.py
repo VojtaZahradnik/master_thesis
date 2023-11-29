@@ -6,14 +6,14 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 import math
-
-from src.modules import conf, log, spec
-
+from feature_engine.creation import MathFeatures
+from src.modules import conf, log, spec, preprocess
+from datetime import datetime, timedelta
 """
 Model Fit with some mandatory functions
 """
 
-def load_pcls(athlete_name: str, activity_type: str, path_to_load: str) -> list:
+def load_pcls(athlete_name: str, activity_type: str, path_to_load: str, race_day: datetime) -> list:
     """
     Load pickles files from load path
     :param athlete_name: name of the athlete
@@ -26,7 +26,8 @@ def load_pcls(athlete_name: str, activity_type: str, path_to_load: str) -> list:
     if len(files) != 0:
         for x in tqdm(range(len(files))):
             try:
-                dfs.append(pd.read_pickle(files[x]))
+                df = pd.read_pickle(files[x])
+                dfs.append(df)
             except RuntimeError:
                 log.error("Runtime error in loading of pickles.")
         log.info(f"{len(files)} pickle files successfully loaded")
@@ -109,3 +110,43 @@ def calc_final_time(distance: pd.Series, speed: pd.Series):
         seconds = 0
         minutes += 1
     return f'Final time: {minutes}:{seconds}'
+
+def get_final_df(train_df: pd.DataFrame,test_df: pd.DataFrame, model, race_name: str, athlete_name: str):
+
+    model.fit(train_df[test_df.columns], train_df.cadence)
+    test_df['cadence'] = model.predict(test_df)
+    test_df['cadence'].mean()
+
+    test_df = preprocess.calc_windows(df=test_df,
+                                      lagged=15,
+                                      cols=["cadence"])
+    test_df = preprocess.calc_moving(df=test_df, max_range=110, col="cadence")
+
+    model.fit(train_df[test_df.columns], train_df.heart_rate)
+    test_df["heart_rate"] = model.predict(test_df)
+    test_df["heart_rate"].mean()
+
+    for fce in ["sum", "mean", "min", "max"]:
+        test_df = MathFeatures(variables=["heart_rate", "cadence"], func=fce).fit(test_df).transform(test_df)
+
+    test_df = preprocess.calc_windows(df=test_df,
+                                      lagged=12,
+                                      cols=["heart_rate"])
+    test_df = preprocess.calc_moving(df=test_df, max_range=110, col="heart_rate")
+
+    model.fit(train_df[test_df.columns], train_df.enhanced_speed)
+    test_df["enhanced_speed"] = model.predict(test_df)
+
+
+    time = ((np.max(test_df.distance) / 1000) / np.mean(test_df["enhanced_speed"])) * 60
+    minutes = math.floor(time)
+    seconds = round((time - minutes) * 60)
+    if seconds == 60:
+        seconds = 0
+        minutes += 1
+
+    final_time = f'{minutes}:{seconds}'
+
+    test_df.to_csv(f"src/output/{athlete_name}_{race_name}.csv")
+
+    return final_time

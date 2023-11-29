@@ -17,3 +17,4 @@ Paths:
   pcl: 'pcl_files'
   output: 'output'
   test_activities: 'tracks'
+  ref_models: 'src/models'

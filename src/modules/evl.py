@@ -7,6 +7,9 @@ import pandas as pd
 import scipy.interpolate
 import seaborn as sns
 
+from io import BytesIO
+import base64
+
 from src.modules import evl, fit, spec, conf, log
 
 """
@@ -141,7 +144,7 @@ METRICS = {
 def eval_all(actual: pd.Series, predicted: pd.Series):
     return evaluate(actual, predicted, metrics=set(METRICS.keys()))
 
-def plot(df: pd.DataFrame, pred: list, true_data= [], endog="enhanced_speed", spline=False, lwidth=1):
+def plot(df: pd.DataFrame, pred: list, ylabel:str,color:str,true_data= [], spline=False, lwidth=1):
     """
     Plot graph with difference between true values and predicted values.
     :param df: tested dataframe
@@ -149,10 +152,10 @@ def plot(df: pd.DataFrame, pred: list, true_data= [], endog="enhanced_speed", sp
     :param spline: boolean variable determine to use spline or not
     :param lwidth: line width
     """
-    fig, ax1 = plt.subplots()
-    color = "tab:red"
+    fig, ax1 = plt.subplots(figsize=(24, 8))
+    color = f"tab:{color}"
     ax1.set_xlabel("Distance")
-    ax1.set_ylabel("Speed", color=color)
+    ax1.set_ylabel(ylabel, color=color)
     pred = pred[1:]
     x = np.linspace(min(df.distance)/1000,max(df.distance)/1000, len(pred))
 
@@ -160,13 +163,13 @@ def plot(df: pd.DataFrame, pred: list, true_data= [], endog="enhanced_speed", sp
     altitude = spl(x)
 
     if true_data != []:
-        ax1.plot(x, true_data[1:], "b", label="True data")
+        ax1.plot(x, true_data[1:], color, label="True data")
         ax1.tick_params(axis="y", labelcolor=color)
 
     if spline:
         spl = scipy.interpolate.UnivariateSpline(x, pred)
         pred = spl(x)
-    ax1.plot(x, pred, "r", label=endog, linewidth=lwidth)
+    ax1.plot(x, pred, color, label=ylabel, linewidth=lwidth)
     ax1.plot(x,np.linspace(np.mean(pred),np.mean(pred),len(pred)),label="Mean")
 
     ax2 = ax1.twinx()
@@ -180,7 +183,13 @@ def plot(df: pd.DataFrame, pred: list, true_data= [], endog="enhanced_speed", sp
     ax1.legend(loc="upper left")
     ax2.legend(loc="upper right")
 
-    return fig,ax1
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    plot = base64.b64encode(buffer.getvalue()).decode()
+    buffer.close()
+
+    return plot
 
 
 def save_figure(
@@ -218,3 +227,45 @@ def save_figure(
     )
 
     return fig
+
+
+def plot_compare(df: pd.DataFrame, pred1: list, pred2: list, ylabel="Speed", color1="blue", color2="red", spline=False,
+                 lwidth=1):
+    """
+    Plot graph with difference between true values and predicted values.
+    :param df: tested dataframe
+    :param pred1: predicted values for the first dataframe
+    :param pred2: predicted values for the second dataframe
+    :param lwidth: line width
+    """
+    fig, ax1 = plt.subplots(figsize=(24, 8))
+    ax1.set_xlabel("Distance")
+    ax1.set_ylabel(ylabel, color=color1)
+
+    x = np.linspace(min(df.distance) / 1000, max(df.distance) / 1000, len(pred1))
+
+    # Interpolate using spline for the first dataframe
+    spl1 = scipy.interpolate.UnivariateSpline(x, df.enhanced_altitude)
+    altitude1 = spl1(x)
+
+    ax1.plot(x, pred1, "r", label=conf["Athlete"]["name"], linewidth=lwidth)
+
+    ax1.plot(x, pred2, "b", label="Reference Athlete", linewidth=lwidth)
+
+    ax2 = ax1.twinx()
+    color2 = "tab:" + color2
+    ax2.set_ylabel("Altitude", color=color2)
+    ax2.plot(x, altitude1, "y", label="Altitude 1")
+    ax2.tick_params(axis="y", labelcolor=color2)
+
+    sns.set(style="ticks")
+    ax1.legend(loc="upper left")
+    ax2.legend(loc="upper right")
+
+    buffer = BytesIO()
+    plt.savefig(buffer, format='png')
+    buffer.seek(0)
+    plot = base64.b64encode(buffer.getvalue()).decode()
+    buffer.close()
+
+    return plot

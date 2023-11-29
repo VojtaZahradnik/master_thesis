@@ -1,12 +1,14 @@
 import argparse
 
-from modules import conf, fit, log, preprocess, ui_output
+from modules import conf, fit, log, preprocess, ui_output, evl
+from modules.compare import Compare
 import pandas as pd
 import numpy as np
 from xgboost import XGBRegressor
 from feature_engine.creation import MathFeatures
 import time
 import os
+from datetime import datetime, timedelta
 
 def main():
     """
@@ -24,7 +26,7 @@ def main():
         "--race_day",
         dest="race_day",
         type=str,
-        help="Name of the GPX file in tracks folder",
+        help="Name of the GPX file in tracks folder in format YYYY-mm-dd",
         default=None,
     )
     args = my_parser.parse_args()
@@ -33,16 +35,17 @@ def main():
     my_parser.set_defaults()
 
     start = time.monotonic()
-
+    print("LOG: Starting application")
     data = fit.load_pcls(
         'zahradnik',
         'running',
         conf["Paths"]["pcl"],
+        race_day=  datetime.strptime(dict_param["race_day"], "%Y-%m-%d")
     )
     print(f"LOG: {len(data)} activities loaded")
 
     test_df = preprocess.load_test_activity(path=os.path.join(conf["Paths"]["test_activities"],dict_param["gpx_file"]),
-                                            race_day=dict_param["race_day"])
+                                            race_day=f"{dict_param['race_day']}-11-30")
 
     print(f"LOG: Activity {dict_param['gpx_file']} successfully loaded with length of {len(test_df)} rows")
 
@@ -89,10 +92,75 @@ def main():
 
     test_df['enhanced_speed'] = [x if x > 15 else np.mean(test_df['enhanced_speed']) or x if x < 30 else np.mean(test_df['enhanced_speed']) for x in
                     test_df['enhanced_speed']]
-
-    print(fit
-          .calc_final_time(distance=test_df["distance"],
+    final_time = (fit
+                  .calc_final_time(distance=test_df["distance"],
                            speed = test_df['enhanced_speed']))
+    print(f"LOG: {final_time}")
+
+    percent_delay = int(len(test_df) * 0.02)  ## 2% delay
+
+    cad_plot = evl.plot(df=test_df[percent_delay:], pred=test_df['cadence'][percent_delay:],
+                        ylabel="Cadence", color="green")
+    hr_plot = evl.plot(df=test_df[percent_delay:], pred=test_df['heart_rate'][percent_delay:],
+                       ylabel="Heart rate", color="red")
+    speed_plot = evl.plot(df=test_df[percent_delay:], pred=test_df["enhanced_speed"][percent_delay:],
+                          ylabel="Speed", color="blue")
+
+    next_day = f"{(datetime.now() + timedelta(days=1)).strftime('%Y-%m-%d')}-11-30"
+    print(f"LOG: Loading reference tracks for {next_day}")
+
+    bechovice = preprocess.load_test_activity(path="tracks/bechovice.gpx",
+                                               race_day=next_day)
+
+    fit.get_final_df(train_df=train_df,
+                     test_df=bechovice,
+                     model=XGBRegressor(),
+                     race_name="bechovice",
+                     athlete_name=conf["Athlete"]["name"])
+    print("LOG: Model based on Bechovice track successfully trained")
+
+    hradec = preprocess.load_test_activity(path="tracks/hradec_half.gpx",
+                                           race_day=next_day)
+    fit.get_final_df(train_df=train_df,
+                     test_df=hradec,
+                     model=XGBRegressor(),
+                     race_name="hradec",
+                     athlete_name=conf["Athlete"]["name"])
+    print("LOG: Model based on Hradec Kralove halfmarathon track successfully trained")
+
+
+    boston = preprocess.load_test_activity(path="tracks/boston.gpx",
+                                           race_day=next_day)
+    fit.get_final_df(train_df=train_df,
+                     test_df=boston,
+                     model=XGBRegressor(),
+                     race_name="boston",
+                     athlete_name=conf["Athlete"]["name"])
+    print("LOG: Model based on Boston marathon track successfully trained")
+
+    compare = Compare(ref_athlete_name="zimola")
+    compare.calc_importances(cols=test_df.columns, clf=clf)
+    radar = compare.plot_radar()
+    print("LOG: Model comparison and radar plot generated")
+
+    track_name = dict_param["gpx_file"].replace(".gpx","")
+
+    ui_output.gen_map(track_name=track_name)
+    print(f"LOG: Map generated for track: {track_name}")
+    ui_output.save_report(athlete_name=conf["Athlete"]["name"],
+                          activity_type=conf["Athlete"]["activity_type"],
+                          activity_name="bechovice.gpx"
+                          .replace(".gpx", "")
+                          .capitalize(),
+                          cad_plot=cad_plot,
+                          hr_plot=hr_plot,
+                          speed_plot=speed_plot,
+                          final_time=final_time,
+                          df=test_df,
+                          radar_plot=radar,
+                          track_name=track_name
+                          )
+    print("LOG: Report saved")
 
     print(f"LOG: Final time of run: {time.monotonic() - start} second")
 

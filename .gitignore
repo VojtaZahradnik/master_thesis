@@ -17,3 +17,6 @@ src/modules/__pycache__
 *test.csv*
 /tracks/bechovice.gpx
 /tracks/krizova_desitka.gpx
+/reports/
+/src/models/
+/src/output/

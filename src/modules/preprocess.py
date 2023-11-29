@@ -166,6 +166,7 @@ def get_hr_zone(hr: pd.Series):
         zone = 5
     return zone
 
+
 def calc_windows(df, lagged, cols):
     for lag in range(1,lagged):
         wft = WindowFeatures(variables=cols,
@@ -228,8 +229,6 @@ def preprocessing(activity_type: str,
             for fce in ["sum", "mean", "min", "max"]:
                 df = MathFeatures(variables=["heart_rate", "cadence"], func=fce).fit(df).transform(df)
 
-            df["peak"] = segment_elev(df)
-
             df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude, window=1)
             df["cadence_altitude_delayed"] = calc_delayed(df.cadence, window=1)
 
@@ -245,6 +244,8 @@ def preprocessing(activity_type: str,
                              max_range=110)
             df = calc_moving(df=df, col="cadence",
                              max_range=110)
+
+            df["peak"] = [0] + segment_elev(df)
 
             df.dropna(inplace=True)
 
@@ -350,7 +351,7 @@ def load_test_activity(path: str, race_day: str):
 
     df["enhanced_altitude_delayed"] = calc_delayed(df.enhanced_altitude, window=3)
 
-    #df["peak"] = [0] + segment_elev(df)
+    df["peak"] = [0] + segment_elev(df)
 
     df = calc_windows(df=df,
                            lagged=15,
