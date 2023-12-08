@@ -6,7 +6,7 @@ import pandas as pd
 from numpy.random import randint, uniform
 from tqdm import tqdm
 import csv
-from src.heuristics.random_shooting import get_form
+from src.heuristics_deprecated.random_shooting import get_form
 from src.modules.evl import rmse
 from src.modules.pred import predict
 from src.modules.spec import ols_form

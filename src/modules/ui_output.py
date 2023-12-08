@@ -12,19 +12,25 @@ def create_html() -> str:
     <head>
         <title>MT report</title>
         <h1 class="centered"><b>{activity_name}</b></h1>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        body {{
+        font-family: 'Roboto', sans-serif;
+                padding: 20px;
+        }}
         .container {{
             display: flex;
             flex-direction: row;
             align-items: center;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
         }}
         img {{
-            max-width: 80%;
-            height: auto;
-            border: 2px solid black; 
-            border-radius: 20px;
+        max-width: 80%;
+        height: auto;
+        border: 4px solid #333;
+        border-radius: 20px;
+        margin-bottom: 10px;
         }}
         h2 {{
             display: block;
@@ -44,9 +50,13 @@ def create_html() -> str:
         th {{
             background-color: #f2f2f2;
         }}
-        h1.centered {{
-            text-align: center;
-        }}
+         h1, h2 {{
+                color: #3498db;
+                margin:20px;
+            }}
+            h1.centered {{
+                text-align: center;
+            }}
         </style>
     </head>
     <body>
@@ -138,13 +148,13 @@ def create_html() -> str:
 
     </body>
     </html>
+
     """
 
     return html
 
 
 def save_report(athlete_name: str,
-                activity_type: str,
                 activity_name: str,
                 cad_plot: str,
                 hr_plot: str,

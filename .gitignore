@@ -9,7 +9,7 @@ src/modules/__pycache__
 /.isort.cfg
 /strava_tokens.json
 /src/research/.ipynb_checkpoints/
-/src/heuristics/__pycache__/
+/src/heuristics_deprecated/__pycache__/
 /feature_eng.csv
 /src/research/vzahradnik.json
 *train_df*

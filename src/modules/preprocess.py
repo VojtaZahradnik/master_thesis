@@ -188,15 +188,11 @@ def calc_moving(df,col, max_range):
 def preprocessing(activity_type: str,
                   athlete_name:str,
                   df_columns: list,
-                  func = ["sum","mean","min","max"],
                   path_to_load="fit_files",
                   name= None
                   ) -> list:
 
     warnings.filterwarnings("ignore")
-    # path=os.path.join(conf["Paths"]["pcl"], athlete_name, activity_type)
-    # if os.path.exists(path):
-    #     shutil.rmtree(path)
 
     files = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
 

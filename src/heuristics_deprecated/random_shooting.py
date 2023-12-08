@@ -12,7 +12,7 @@ from src.modules.spec import ols_form
 from src.modules import conf, log
 
 """
-Module for implementation of heuristics algorithm
+Module for implementation of heuristics_deprecated algorithm
 """
 
 
@@ -46,7 +46,7 @@ def random_shoot(
     ban_cols=[]
 ) -> Tuple[Any, Any, Any, Any, Any]:
     """
-    Implementation of random shooting heuristics algorithm
+    Implementation of random shooting heuristics_deprecated algorithm
     :param train_df: training dataframe
     :param test_df: testing dataframe
     :param hmax: maximal number of shoots
@@ -79,7 +79,7 @@ def shoot_and_go(
     endog='enhanced_speed',
 ) -> tuple:
     """
-    Implementation of Shoot&Go heuristics algorithm, optimization after random shooting algorithm
+    Implementation of Shoot&Go heuristics_deprecated algorithm, optimization after random shooting algorithm
     :param train_df: training dataframe
     :param test_df: testing dataframe
     :param columns: list of columns name for generate formula
