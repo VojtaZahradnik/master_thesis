@@ -10,56 +10,73 @@ def create_html() -> str:
     <!DOCTYPE html>
     <html>
     <head>
-        <title>MT report</title>
-        <h1 class="centered"><b>{activity_name}</b></h1>
+        <title>MT Report - {activity_name}</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        body {{
-        font-family: 'Roboto', sans-serif;
-                padding: 20px;
-        }}
-        .container {{
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 30px;
-        }}
-        img {{
-        max-width: 80%;
-        height: auto;
-        border: 4px solid #333;
-        border-radius: 20px;
-        margin-bottom: 10px;
-        }}
-        h2 {{
-            display: block;
-        }}
-        table {{
-            border-collapse: collapse;
-            width: 80%;
-            margin: 20px 0;
-            margin-left: auto;
-            margin-right: auto;
-        }}
-        th, td {{
-            border: 1px solid black;
-            padding: 8px;
-            text-align: left;
-        }}
-        th {{
-            background-color: #f2f2f2;
-        }}
-         h1, h2 {{
-                color: #3498db;
-                margin:20px;
+        <style>
+            body {{
+                font-family: 'Arial', sans-serif;
+                background-color: #f4f4f4;
+                color: #333;
+                margin: 0;
+                padding: 0;
             }}
-            h1.centered {{
+            .header {{
+                color: white;
                 text-align: center;
+                padding: 1em 0;
+            }}
+            .container {{
+                padding: 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                margin-bottom: 30px;
+            }}
+            img {{
+                max-width: 100%;
+                height: auto;
+                border: 4px solid #333;
+                border-radius: 20px;
+                margin-bottom: 10px;
+            }}
+            h1, h2 {{
+                color: #3498db;
+                margin: 20px;
+            }}
+            h1.centered, h2.centered {{
+                text-align: center;
+            }}
+            table {{
+                border-collapse: collapse;
+                width: 80%;
+                margin: 20px auto;
+            }}
+            th, td {{
+                border: 1px solid #ddd;
+                padding: 8px;
+                text-align: left;
+            }}
+            th {{
+                color: black;
+            }}
+            iframe {{
+                width: 100%;
+                max-width: 800px;
+                height: 600px;
+                border: none;
+            }}
+            @media screen and (max-width: 768px) {{
+                table, img, iframe {{
+                    width: 100%;
+                }}
             }}
         </style>
     </head>
-    <body>
+   <body>
+     <div class="header">
+            <h1><b>{activity_name}</b></h1>
+        </div>
         <div class="container">
             <h1>Cadence of the activity</h1>
             <img src="data:image/png;base64, {cad_plot}" alt="Cadence Plot Image">
@@ -152,6 +169,8 @@ def create_html() -> str:
     """
 
     return html
+
+
 
 
 def save_report(athlete_name: str,
