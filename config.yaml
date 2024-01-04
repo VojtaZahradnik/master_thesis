@@ -1,0 +1,20 @@
+Project:
+  name: 'master_thesis'
+  test_activity: '2021-09-18-06-13'
+GO:
+  r_cross: 0.6
+  r_mut: 0.5
+Garmin:
+  email: 'vojta.zahradnik@gmail.com'
+  pass: 'Dlazdicka1'
+Athlete:
+  name: 'zahradnik'
+  activity_type: 'running'
+
+Paths:
+  raw: 'raw_files'
+  fit: 'fit_files'
+  pcl: 'pcl_files'
+  output: 'output'
+  test_activities: 'tracks'
+  ref_models: 'src/models'

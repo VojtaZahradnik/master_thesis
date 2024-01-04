@@ -1,0 +1,17 @@
+modules~=1.0.0
+matplotlib~=3.5.1
+numpy~=1.21.5
+pandas~=1.4.1
+scipy~=1.7.3
+statsmodels~=0.13.2
+sklearn~=0.0
+scikit-learn~=1.0.2
+fitparse~=1.2.0
+pyunpack~=0.2.2
+meteostat~=1.6.1
+PyYAML~=6.0
+tqdm==4.64.1
+patool==1.12
+seaborn==0.12.0
+garminconnect==0.1.45
+
