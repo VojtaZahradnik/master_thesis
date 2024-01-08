@@ -56,10 +56,14 @@ def main():
     else:
         train_df = fit.clean_data(pd.concat(low_dist))
 
-    clf = XGBRegressor()
+    best_params_hr = {"learning_rate": 0.069, "max_depth": 2, "min_child_weight": 1.23}
+    best_params_cad = {"learning_rate": 0.146, "max_depth": 8, "min_child_weight": 4.06}
+    best_params_speed = {"learning_rate": 0.137, "max_depth": 2, "min_child_weight": 2.40}
+
     print("LOG: Starting training of models")
 
     # CADENCE
+    clf = XGBRegressor(best_params_cad)
     clf.fit(train_df[test_df.columns], train_df.cadence)
     test_df['cadence'] = clf.predict(test_df)
     print("LOG: Cadence model trained successfully")
@@ -71,6 +75,7 @@ def main():
     test_df = preprocess.calc_moving(df=test_df, max_range=110, col="cadence")
 
     # HEART RATE
+    clf = XGBRegressor(best_params_hr)
     clf.fit(train_df[test_df.columns], train_df.heart_rate)
     test_df["heart_rate"] = clf.predict(test_df)
     print("LOG: Heart rate model trained successfully")
@@ -85,6 +90,7 @@ def main():
               lagged=12,
               cols=["heart_rate"])
     test_df = preprocess.calc_moving(df=test_df, max_range=110, col="heart_rate")
+    clf = XGBRegressor(best_params_speed)
     clf.fit(train_df[test_df.columns], train_df.enhanced_speed)
     test_df["enhanced_speed"] = clf.predict(test_df)
     print("LOG: Speed model trained successfully")
@@ -114,7 +120,6 @@ def main():
 
     fit.get_final_df(train_df=train_df,
                      test_df=bechovice,
-                     model=XGBRegressor(),
                      race_name="bechovice",
                      athlete_name=conf["Athlete"]["name"])
     print("LOG: Model based on Bechovice track successfully trained")
@@ -123,7 +128,6 @@ def main():
                                            race_day=next_day)
     fit.get_final_df(train_df=train_df,
                      test_df=hradec,
-                     model=XGBRegressor(),
                      race_name="hradec",
                      athlete_name=conf["Athlete"]["name"])
     print("LOG: Model based on Hradec Kralove halfmarathon track successfully trained")
@@ -133,7 +137,6 @@ def main():
                                            race_day=next_day)
     fit.get_final_df(train_df=train_df,
                      test_df=boston,
-                     model=XGBRegressor(),
                      race_name="boston",
                      athlete_name=conf["Athlete"]["name"])
     print("LOG: Model based on Boston marathon track successfully trained")

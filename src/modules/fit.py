@@ -7,8 +7,10 @@ import pandas as pd
 from tqdm import tqdm
 import math
 from feature_engine.creation import MathFeatures
-from src.modules import conf, log, spec, preprocess
-from datetime import datetime, timedelta
+from src.modules import log, spec, preprocess
+from datetime import datetime
+from xgboost import XGBRegressor
+
 """
 Model Fit with some mandatory functions
 """
@@ -178,7 +180,7 @@ def calc_final_time(distance: pd.Series, speed: pd.Series) -> pd.Series:
         minutes += 1
     return f'Final time: {minutes}:{seconds}'
 
-def get_final_df(train_df: pd.DataFrame,test_df: pd.DataFrame, model, race_name: str, athlete_name: str) -> pd.DataFrame:
+def get_final_df(train_df: pd.DataFrame,test_df: pd.DataFrame, race_name: str, athlete_name: str) -> pd.DataFrame:
     """
     Fits a model to the training data and applies it to the test data to predict various performance metrics.
 
@@ -196,7 +198,11 @@ def get_final_df(train_df: pd.DataFrame,test_df: pd.DataFrame, model, race_name:
     Returns:
         str: The final predicted time for the race in the format 'minutes:seconds'.
     """
+    best_params_hr = {"learning_rate": 0.069, "max_depth": 2, "min_child_weight": 1.23}
+    best_params_cad = {"learning_rate": 0.146, "max_depth": 8, "min_child_weight": 4.06}
+    best_params_speed = {"learning_rate": 0.137, "max_depth": 2, "min_child_weight": 2.40}
 
+    model = XGBRegressor(best_params_cad)
     model.fit(train_df[test_df.columns], train_df.cadence)
     test_df['cadence'] = model.predict(test_df)
     test_df['cadence'].mean()
@@ -205,7 +211,7 @@ def get_final_df(train_df: pd.DataFrame,test_df: pd.DataFrame, model, race_name:
                                       lagged=15,
                                       cols=["cadence"])
     test_df = preprocess.calc_moving(df=test_df, max_range=110, col="cadence")
-
+    model = XGBRegressor(best_params_hr)
     model.fit(train_df[test_df.columns], train_df.heart_rate)
     test_df["heart_rate"] = model.predict(test_df)
     test_df["heart_rate"].mean()
@@ -217,7 +223,7 @@ def get_final_df(train_df: pd.DataFrame,test_df: pd.DataFrame, model, race_name:
                                       lagged=12,
                                       cols=["heart_rate"])
     test_df = preprocess.calc_moving(df=test_df, max_range=110, col="heart_rate")
-
+    model = XGBRegressor(best_params_speed)
     model.fit(train_df[test_df.columns], train_df.enhanced_speed)
     test_df["enhanced_speed"] = model.predict(test_df)
 
