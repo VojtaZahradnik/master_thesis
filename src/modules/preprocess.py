@@ -25,12 +25,17 @@ Load values from fit files and add some new variables from external libraries
 
 def get_meteo(lat: str, long: str, alt: str, day: str) -> Union[list[Any], DataFrame]:
     """
-    Implementation of meteostat library to get data about weather on start location of activity
-    :param lat: latitude of start location
-    :param long: longitude of start location
-    :param alt: altitude of start location
-    :param day: day of the activity start
-    :return: weather information about start location or basic values, when meteostat don't have data about location
+    Retrieves meteorological data for a specified location and time using the Meteostat library.
+
+    Args:
+        lat (str): Latitude of the start location.
+        long (str): Longitude of the start location.
+        alt (str): Altitude of the start location.
+        day (str): Date and time of the activity start.
+
+    Returns:
+        Union[list[Any], DataFrame]: Weather information about the start location,
+        or basic values when Meteostat does not have data for the location.
     """
     lst = [15, 0, 0, 0, 0]
     if lat is not None and long is not None:
@@ -67,10 +72,14 @@ def get_meteo(lat: str, long: str, alt: str, day: str) -> Union[list[Any], DataF
 
 def calc_slope_steep(df: pd.DataFrame, threshold=45) -> list[int]:
     """
-    Calculation of slope steep for every row of data
-    :param df: activity dataframe
-    :param threshold: steep needed to push a bike or walk in running
-    :return: slope steep
+    Calculates the slope steepness for each row in a dataframe.
+
+    Args:
+       df (pd.DataFrame): DataFrame containing activity data.
+       threshold (int, optional): Threshold for steepness to push a bike or walk in running. Defaults to 45.
+
+    Returns:
+       list[int]: A list representing the slope steepness for each data point.
     """
     slope_steep = [0] * len(df)
     for i in range(1, len(df)):
@@ -91,10 +100,14 @@ def calc_slope_steep(df: pd.DataFrame, threshold=45) -> list[int]:
 
 def calc_ascent_descent(df: pd.DataFrame, threshold=10) -> tuple[list[int], list[int]]:
     """
-    Calculation of ascent and descent of steep
-    :param df: activity dataframe
-    :param threshold: steep needed to push a bike or walk in running
-    :return: Two lists of ascent and descent
+    Calculates the ascent and descent steepness in a DataFrame.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing activity data.
+        threshold (int, optional): Threshold for considering an elevation change significant. Defaults to 10.
+
+    Returns:
+        tuple[list[int], list[int]]: Two lists representing the ascent and descent for each data point.
     """
     slope_ascent = [0] * len(df)
     slope_descent = [0] * len(df)
@@ -114,10 +127,14 @@ def calc_ascent_descent(df: pd.DataFrame, threshold=10) -> tuple[list[int], list
 
 def parse_fit(filename: str, df_columns: list) -> tuple[DataFrame, Any]:
     """
-    Function for parsing fit file
-    :param filename: name of the file
-    :param df_columns: list of column names
-    :return: dataframe from fit file
+    Parses a FIT file into a DataFrame.
+
+    Args:
+        filename (str): Name of the FIT file to be parsed.
+        df_columns (list): List of column names to include in the DataFrame.
+
+    Returns:
+        tuple[DataFrame, Any]: DataFrame containing data from the FIT file and the last record.
     """
     fitfile = fitparse.FitFile(filename)
     activity = []
@@ -134,7 +151,15 @@ def basic_outlier_detect(
     df: pd.DataFrame,
 ) -> pd.DataFrame:
     """
-    Method for basic outlier detection based just on values
+    Performs basic outlier detection on a DataFrame.
+
+    This method applies simple rules to detect and handle outliers in the cadence, heart rate, and enhanced speed columns.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing activity data.
+
+    Returns:
+        pd.DataFrame: The DataFrame after outlier detection and correction.
     """
 
     df["cadence"] = df.cadence.apply(lambda i: i if 30 < i < 110 else np.mean(df.cadence))
@@ -143,16 +168,41 @@ def basic_outlier_detect(
     return df
 
 def calc_dist(pos1: tuple,pos2: tuple) -> int:
+    """
+    Calculates the Haversine distance between two points.
+
+    Args:
+        pos1 (tuple): The first position (latitude, longitude).
+        pos2 (tuple): The second position (latitude, longitude).
+
+    Returns:
+        int: The distance in meters between the two points.
+    """
     return hs.haversine(pos1, pos2, unit=hs.Unit.METERS)
 
 def calc_delayed(lst: pd.Series, window = 1) -> pd.Series:
     """
-    Method for calculation of delayed variable in time t=-1
-    :param lst: list of variable
+    Calculates a delayed version of a given Series.
+
+    Args:
+        lst (pd.Series): Series of variable values.
+        window (int, optional): The window size for rolling mean calculation. Defaults to 1.
+
+    Returns:
+        pd.Series: The delayed series.
     """
     return lst.rolling(window, min_periods=1).mean()
 
-def get_hr_zone(hr: pd.Series):
+def get_hr_zone(hr: pd.Series) -> pd.DataFrame:
+    """
+    Determines the heart rate zone based on the average heart rate.
+
+    Args:
+        hr (pd.Series): Series containing heart rate data.
+
+    Returns:
+        int: The heart rate zone.
+    """
     mean_hr = np.mean(hr)
     if mean_hr < 140:
         zone = 1
@@ -167,7 +217,18 @@ def get_hr_zone(hr: pd.Series):
     return zone
 
 
-def calc_windows(df, lagged, cols):
+def calc_windows(df, lagged, cols) -> pd.DataFrame:
+    """
+    Calculates window features for specified columns in a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to process.
+        lagged (int): The number of lags to consider for window features.
+        cols (list): List of column names for which to calculate window features.
+
+    Returns:
+        pd.DataFrame: The DataFrame with window features added.
+    """
     for lag in range(1,lagged):
         wft = WindowFeatures(variables=cols,
                              window =lag)
@@ -175,12 +236,34 @@ def calc_windows(df, lagged, cols):
         df.fillna(0, inplace=True)
     return df
 
-def calc_dt(df,cols, date):
+def calc_dt(df,cols, date) -> pd.DataFrame:
+    """
+    Calculates datetime features for a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to process.
+        cols (list): List of datetime features to extract.
+        date (datetime): The reference datetime for feature extraction.
+
+    Returns:
+        pd.DataFrame: The DataFrame with datetime features added.
+    """
     df["date"] = date
     dtf = DatetimeFeatures(features_to_extract=cols)
     return dtf.fit_transform(df)
 
-def calc_moving(df,col, max_range):
+def calc_moving(df,col, max_range) -> pd.DataFrame:
+    """
+    Calculates moving averages for a specified column in a DataFrame.
+
+    Args:
+        df (pd.DataFrame): The DataFrame to process.
+        col (str): The column name for which to calculate moving averages.
+        max_range (int): The maximum range for moving averages.
+
+    Returns:
+        pd.DataFrame: The DataFrame with moving averages added.
+    """
     for x in range(10,max_range,10):
         df[f"moved_{col}_{x}"] = uniform_filter1d(df[col], size=x)
     return df
@@ -191,7 +274,19 @@ def preprocessing(activity_type: str,
                   path_to_load="fit_files",
                   name= None
                   ) -> list:
+    """
+    Preprocesses data from FIT files and applies various transformations.
 
+    Args:
+        activity_type (str): The type of activity (e.g., running, cycling).
+        athlete_name (str): The name of the athlete.
+        df_columns (list): List of columns to include in the DataFrame.
+        path_to_load (str, optional): Path to the directory containing FIT files. Defaults to "fit_files".
+        name (str, optional): Optional name for the processed data. Defaults to None.
+
+    Returns:
+        list: A list of processed DataFrames.
+    """
     warnings.filterwarnings("ignore")
 
     files = glob.glob(os.path.join(path_to_load, athlete_name, activity_type, "*.fit"))
@@ -262,11 +357,14 @@ def save_pcl(
     name: str
 ):
     """
-    Save loaded dataframes into pickles
-    :param df: list of dataframes to save into pickles
-    :param athlete_name: name of the athlete
-    :param activity_type: type of the activity
-    :param path_to_save: save path of pickles
+    Saves processed data into pickle files.
+
+    Args:
+        df (list): List of DataFrames to save into pickle files.
+        activity_type (str): Type of the activity.
+        athlete_name (str): Name of the athlete.
+        path_to_save (str): Save path for the pickle files.
+        name (str): Name for the saved pickle file.
     """
 
     if name is None:
@@ -292,6 +390,15 @@ def save_pcl(
 
 
 def segment_elev(df: pd.DataFrame) -> list[int]:
+    """
+    Segments elevation data in a DataFrame to identify peaks.
+
+    Args:
+        df (pd.DataFrame): DataFrame containing elevation data.
+
+    Returns:
+        list[int]: A list indicating peaks in the elevation data.
+    """
     def isMonotonic(A):
         return all(A[i] <= A[i + 1] for i in range(len(A) - 1)) or all(A[i] >= A[i + 1] for i in range(len(A) - 1))
 
@@ -310,7 +417,17 @@ def segment_elev(df: pd.DataFrame) -> list[int]:
 
     return peak_signs
 
-def load_test_activity(path: str, race_day: str):
+def load_test_activity(path: str, race_day: str) -> pd.DataFrame:
+    """
+    Loads test activity data from a GPX file.
+
+    Args:
+        path (str): Path to the GPX file.
+        race_day (str): The date of the race or activity in 'YYYY-MM-DD-HH-MM' format.
+
+    Returns:
+        pd.DataFrame: The processed DataFrame containing activity data.
+    """
     df = Converter(input_file=path).gpx_to_dataframe()
 
     df["timestamp"] = df.time
@@ -359,6 +476,15 @@ def load_test_activity(path: str, race_day: str):
     return df
 
 def segment_data(data: list) -> tuple:
+    """
+    Segments activity data into low and high distance categories.
+
+    Args:
+        data (list): List of DataFrames containing activity data.
+
+    Returns:
+        tuple: A tuple of two lists, one for low distance activities and one for high distance activities.
+    """
     low_dist = []
     high_dist = []
     for act in data:

@@ -13,9 +13,15 @@ def ols(
     df: pd.DataFrame, col: list, endog: str
 ) -> statsmodels.regression.linear_model.RegressionResultsWrapper:
     """
-    Create model based on ordinary least squares method without formula
-    :param df: training dataframe
-    :return: trained model
+    Performs Ordinary Least Squares (OLS) regression without a formula interface.
+
+    Args:
+        df (pd.DataFrame): The training DataFrame.
+        col (list): List of column names to be used as exogenous variables.
+        endog (str): The name of the column to be used as the endogenous variable.
+
+    Returns:
+        statsmodels.regression.linear_model.RegressionResultsWrapper: The fitted OLS model.
     """
     df.reset_index()
     x = df[col].astype(float)
@@ -28,10 +34,14 @@ def ols_form(
     df: pd.DataFrame, form: str
 ) -> statsmodels.regression.linear_model.RegressionResultsWrapper:
     """
-    Create model based on ordinary least squares method with loss function
-    :param df: training dataframe
-    :param form: loss function
-    :return: trained model
+    Performs Ordinary Least Squares (OLS) regression using a formula interface.
+
+    Args:
+        df (pd.DataFrame): The training DataFrame.
+        form (str): The formula string to specify the model.
+
+    Returns:
+        statsmodels.regression.linear_model.RegressionResultsWrapper: The fitted OLS model.
     """
     return smf.ols(form, data=df).fit()
 
@@ -40,10 +50,15 @@ def sklearn(
     df: pd.DataFrame, col: list,  endog: str
 ) -> linear_model.LinearRegression:
     """
-    Create model based on ordinary least squares method from library scikit-learn
-    :param df: training dataframe
-    :param col: names of columns
-    :return: trained model
+    Performs Ordinary Least Squares (OLS) regression using the scikit-learn library.
+
+    Args:
+        df (pd.DataFrame): The training DataFrame.
+        col (list): List of column names to be used as exogenous variables.
+        endog (str): The name of the column to be used as the endogenous variable.
+
+    Returns:
+        linear_model.LinearRegression: The fitted Linear Regression model from scikit-learn.
     """
     df.reset_index()
     lr = linear_model.LinearRegression()
@@ -58,12 +73,16 @@ def lasso(
     df: pd.DataFrame, col: list, endog: str, alpha=0.1,
 ) -> linear_model.Lasso:
     """
-    Create model based on lasso regression from library scikit-learn
-    :param df: training dataframe
-    :param col: names of columns
-    :param alpha: constant that multiplies the L1 term
-    :param endog: endogenous variable
-    :return: trained model
+    Performs Lasso regression using the scikit-learn library.
+
+    Args:
+        df (pd.DataFrame): The training DataFrame.
+        col (list): List of column names to be used as exogenous variables.
+        endog (str): The name of the column to be used as the endogenous variable.
+        alpha (float, optional): The constant that multiplies the L1 term. Default is 0.1.
+
+    Returns:
+        linear_model.Lasso: The fitted Lasso Regression model from scikit-learn.
     """
     df.reset_index()
     lar = linear_model.Lasso(alpha)

@@ -1,4 +1,6 @@
 import os
+
+import matplotlib.pyplot
 import pandas as pd
 from src.modules import evl, conf
 import folium
@@ -6,6 +8,12 @@ import gpxpy
 from datetime import datetime
 
 def create_html() -> str:
+    """
+    Generates an HTML template for displaying various plots and data for an athlete's activity.
+
+    Returns:
+        str: A string containing the HTML template.
+    """
     html = """
     <!DOCTYPE html>
     <html>
@@ -182,6 +190,23 @@ def save_report(athlete_name: str,
                 df,
                 radar_plot,
                 track_name: str):
+    """
+    Saves a detailed HTML report for an athlete's activity, including plots and statistics.
+
+    Args:
+        athlete_name (str): The name of the athlete.
+        activity_name (str): The name of the activity.
+        cad_plot (str): Base64-encoded string of the cadence plot image.
+        hr_plot (str): Base64-encoded string of the heart rate plot image.
+        speed_plot (str): Base64-encoded string of the speed plot image.
+        final_time (str): Final time of the activity.
+        df (pd.DataFrame): DataFrame containing activity data.
+        radar_plot (str): Base64-encoded string of the radar plot image.
+        track_name (str): Name of the track for the activity.
+
+    Returns:
+        None: This function does not return a value but saves an HTML file.
+    """
     with open(os.path.join("reports", f"report_{athlete_name}_{activity_name.lower()}_{datetime.now().strftime('%Y%m%d%M')}.html"), "w") as html_file:
         html_file.write(create_html()
                         .format(activity_name=activity_name,
@@ -204,7 +229,17 @@ def save_report(athlete_name: str,
 
     print("LOG: HTML page with the plots next to each other has been created.")
 
-def ref_track(track_name: str, ref_athlete_name = "zimola"):
+def ref_track(track_name: str, ref_athlete_name = "zimola") -> matplotlib.pyplot.plot:
+    """
+    Generates a plot comparing the performance of two athletes on a given track.
+
+    Args:
+        track_name (str): Name of the track to compare.
+        ref_athlete_name (str, optional): Reference athlete's name for comparison. Default is "zimola".
+
+    Returns:
+        plot: A plot comparing the performances of the specified athletes.
+    """
     pred_1 = pd.read_csv(f"src/{conf['Paths']['output']}/{conf['Athlete']['name']}_{track_name}.csv")
     pred_2 = pd.read_csv(f"src/{conf['Paths']['output']}/{ref_athlete_name}_{track_name}.csv")
 
@@ -212,10 +247,29 @@ def ref_track(track_name: str, ref_athlete_name = "zimola"):
 
     return plot
 
-def calc_stride_length(distance: pd.Series, cadence: pd.Series):
+def calc_stride_length(distance: pd.Series, cadence: pd.Series) -> pd.Series:
+    """
+    Calculates the stride length based on distance and cadence data.
+
+    Args:
+        distance (pd.Series): A series containing distance data.
+        cadence (pd.Series): A series containing cadence data.
+
+    Returns:
+        The calculated stride length.
+    """
     return distance/cadence
 
 def gen_map(track_name: str):
+    """
+    Generates a map from a GPX file for a specified track.
+
+    Args:
+        track_name (str): The name of the track for which the map is to be generated.
+
+    Returns:
+        None: This function does not return a value but saves a map as an HTML file.
+    """
     # Read the GPX file and parse coordinates
     gpx_file = f"tracks/{track_name}.gpx"
     gpx_data = open(gpx_file, "r").read()
