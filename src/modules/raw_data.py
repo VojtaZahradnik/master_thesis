@@ -1,7 +1,6 @@
 import glob
 import os
 import shutil
-import threading
 import time
 
 import fitparse
@@ -13,12 +12,19 @@ from tqdm import tqdm
 Basic extract and sort of fit files.
 """
 
-def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
+def unpack(path_to_load: str, path_to_save: str, athlete_name: str) -> None:
     """
-    Unpack fit files from compressed format.
-    :param path_to_load: Pickle file path.
-    :param path_to_save: Save path of sorted zahradnik.
-    :param athlete_name: Name of the athlete.
+    Unpacks and extracts '.fit' files from compressed archives in a specified load path.
+    Clears any existing '.fit' files in the athlete's directory under the configured 'fit' path
+    before proceeding. Handles both '.zip' and '.gz' file formats.
+
+    Args:
+        path_to_load (str): The directory path where the compressed '.zip' or '.gz' files are located.
+        path_to_save (str): The directory path where the extracted '.fit' files should be saved.
+        athlete_name (str): The name of the athlete, used to identify specific files and directories.
+
+    Returns:
+        None: This function does not return a value but extracts files to the specified location.
     """
     start = time.monotonic()
     [os.remove(file) for file in glob.glob(os.path.join(conf['Paths']['fit'], conf['Athlete']['name'], "*.fit"))]
@@ -43,11 +49,19 @@ def unpack(path_to_load: str, path_to_save: str, athlete_name: str):
     else:
         log.warning(f"Raw data {path_to_load} folder for unpack is empty")
 
-def sort_activities(athlete_name: str, path_to_save: str):
+def sort_activities(athlete_name: str, path_to_save: str) -> None:
     """
-    Sort zahradnik by type and will choose zahradnik with needed variables
-    :param athlete_name: Name of the athlete
-    :param path_to_save: save path of sorted zahradnik
+    Sorts '.fit' files by activity type and filters out specific sub-sports like 'indoor_cycling'
+    and 'treadmill'. It categorizes each '.fit' file based on the 'sport' field and organizes
+    them into corresponding subdirectories in the save path. Files not matching the criteria
+    are removed.
+
+    Args:
+        athlete_name (str): The name of the athlete, used to identify specific files and directories.
+        path_to_save (str): The directory path where the sorted and categorized '.fit' files are stored.
+
+    Returns:
+        None: This function does not return a value but sorts and organizes files in the specified location.
     """
     files = glob.glob(os.path.join(conf['Paths']['fit'], athlete_name, "*.fit"))
     [shutil.rmtree(file) for file in glob.glob(os.path.join(conf['Paths']['fit'], athlete_name, "*")) if os.path.isdir(file)]
